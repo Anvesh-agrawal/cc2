@@ -402,7 +402,7 @@ def render_charts(
 ):
     """Render all charts in a grid layout."""
     
-    tabs = st.tabs(["📈 Trends", "🏦 Banks", "💳 Methods", "🗺️ Routes"])
+    tabs = st.tabs(["📈 Trends", "🏦 Banks", "💳 Methods", "🗺️ Routes", "🧠 Learning"])
     
     with tabs[0]:
         render_success_rate_chart(historical_data)
@@ -417,3 +417,225 @@ def render_charts(
     
     with tabs[3]:
         render_route_heatmap(route_data)
+    
+    with tabs[4]:
+        render_learning_trajectory(historical_data)
+        render_provider_leaderboard(route_data)
+        render_beta_distributions(route_data)
+
+
+def render_learning_trajectory(historical_data: List[Dict], height: int = 300):
+    """Render learning trajectory showing improvement over time."""
+    
+    if not historical_data or len(historical_data) < 5:
+        st.caption("⏳ Collecting data to show learning trajectory...")
+        return
+    
+    df = pd.DataFrame(historical_data)
+    
+    if "timestamp" not in df.columns:
+        df["timestamp"] = pd.date_range(end=datetime.now(), periods=len(df), freq="s")
+    
+    # Calculate rolling average to show learning
+    df["success_rate_smooth"] = df.get("success_rate", pd.Series([0.9] * len(df))).rolling(window=5, min_periods=1).mean()
+    
+    # Calculate improvement delta from start
+    start_rate = df["success_rate_smooth"].iloc[0] if len(df) > 0 else 0.9
+    current_rate = df["success_rate_smooth"].iloc[-1] if len(df) > 0 else 0.9
+    improvement = current_rate - start_rate
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Starting Rate", f"{start_rate:.1%}")
+    with col2:
+        st.metric("Current Rate", f"{current_rate:.1%}")
+    with col3:
+        st.metric("Improvement", f"{improvement:+.1%}", delta=f"{improvement*100:+.1f}pp")
+    
+    fig = go.Figure()
+    
+    # Raw data
+    fig.add_trace(go.Scatter(
+        x=df["timestamp"],
+        y=df.get("success_rate", [0.9] * len(df)),
+        name="Raw",
+        line=dict(color="#6366F1", width=1),
+        opacity=0.3
+    ))
+    
+    # Smoothed learning curve
+    fig.add_trace(go.Scatter(
+        x=df["timestamp"],
+        y=df["success_rate_smooth"],
+        name="Learning Curve",
+        line=dict(color="#10B981", width=3),
+        fill="tozeroy",
+        fillcolor="rgba(16, 185, 129, 0.1)"
+    ))
+    
+    fig.update_layout(
+        height=height,
+        margin=dict(l=0, r=0, t=30, b=0),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(showgrid=False, color="#94A3B8"),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#334155",
+            color="#94A3B8",
+            tickformat=".0%",
+            range=[0.7, 1.0]
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(color="#94A3B8")
+        ),
+        title=dict(text="📈 Agent Learning Trajectory", font=dict(color="#E2E8F0", size=14))
+    )
+    
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
+def render_provider_leaderboard(route_data: List[Dict]):
+    """Render provider performance leaderboard."""
+    
+    if not route_data:
+        st.caption("No provider data available")
+        return
+    
+    st.subheader("🏆 Provider Leaderboard")
+    
+    # Aggregate by gateway
+    from collections import defaultdict
+    gateway_stats = defaultdict(lambda: {"success": 0, "total": 0, "latency_sum": 0, "fee": 0})
+    
+    for route in route_data:
+        gateway = route.get("gateway", "unknown")
+        gateway_stats[gateway]["success"] += route.get("successful_transactions", 0)
+        gateway_stats[gateway]["total"] += route.get("total_transactions", 0)
+        gateway_stats[gateway]["latency_sum"] += route.get("avg_latency", 0) * route.get("total_transactions", 1)
+    
+    # Provider fees
+    provider_fees = {
+        "razorpay": 2.0,
+        "paytm": 1.8,
+        "phonepe": 1.5,
+        "billdesk": 1.0,
+        "ccavenue": 2.5,
+    }
+    
+    # Calculate metrics and rank
+    leaderboard = []
+    for gateway, stats in gateway_stats.items():
+        if stats["total"] > 0:
+            success_rate = stats["success"] / stats["total"]
+            avg_latency = stats["latency_sum"] / stats["total"]
+            fee = provider_fees.get(gateway, 2.0)
+            # EV score (higher is better)
+            ev_score = success_rate * (1 - fee/100)
+            
+            leaderboard.append({
+                "Provider": gateway.title(),
+                "Success Rate": f"{success_rate:.1%}",
+                "Avg Latency": f"{avg_latency:.0f}ms",
+                "Fee": f"{fee:.1f}%",
+                "EV Score": f"{ev_score:.3f}",
+                "_ev": ev_score  # For sorting
+            })
+    
+    # Sort by EV score
+    leaderboard.sort(key=lambda x: x["_ev"], reverse=True)
+    
+    # Add rank
+    for i, item in enumerate(leaderboard):
+        medal = ["🥇", "🥈", "🥉"][i] if i < 3 else f"#{i+1}"
+        item["Rank"] = medal
+        del item["_ev"]
+    
+    if leaderboard:
+        # Reorder columns
+        df = pd.DataFrame(leaderboard)[["Rank", "Provider", "Success Rate", "Avg Latency", "Fee", "EV Score"]]
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.caption("No provider data yet")
+
+
+def render_beta_distributions(route_data: List[Dict], height: int = 300):
+    """Visualize Thompson Sampling Beta distributions for top routes."""
+    
+    if not route_data:
+        st.caption("No route data for Beta visualization")
+        return
+    
+    st.subheader("🎲 Bayesian Confidence (Thompson Sampling)")
+    st.caption("Narrower curves = higher confidence. Agent learns which routes work best.")
+    
+    # Filter to top 5 by transaction count
+    sorted_routes = sorted(route_data, key=lambda x: x.get("total_transactions", 0), reverse=True)[:5]
+    
+    if not sorted_routes:
+        st.caption("Insufficient data for visualization")
+        return
+    
+    import numpy as np
+    from scipy import stats as scipy_stats
+    
+    fig = go.Figure()
+    
+    colors = ["#8B5CF6", "#10B981", "#F59E0B", "#EF4444", "#3B82F6"]
+    
+    x = np.linspace(0, 1, 200)
+    
+    for i, route in enumerate(sorted_routes):
+        alpha = route.get("alpha", 1.0)
+        beta = route.get("beta", 1.0)
+        
+        # Calculate Beta distribution PDF
+        try:
+            y = scipy_stats.beta.pdf(x, alpha, beta)
+        except:
+            continue
+        
+        route_name = f"{route.get('gateway', 'unknown')}"
+        
+        fig.add_trace(go.Scatter(
+            x=x,
+            y=y,
+            name=f"{route_name} (α={alpha:.0f}, β={beta:.0f})",
+            line=dict(color=colors[i % len(colors)], width=2),
+            fill="tozeroy",
+            fillcolor=f"rgba{tuple(list(int(colors[i % len(colors)].lstrip('#')[j:j+2], 16) for j in (0, 2, 4)) + [0.1])}"
+        ))
+    
+    fig.update_layout(
+        height=height,
+        margin=dict(l=0, r=0, t=10, b=0),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(
+            title="Success Probability",
+            showgrid=False,
+            color="#94A3B8",
+            tickformat=".0%"
+        ),
+        yaxis=dict(
+            title="Density",
+            showgrid=True,
+            gridcolor="#334155",
+            color="#94A3B8"
+        ),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            font=dict(color="#94A3B8", size=10)
+        )
+    )
+    
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})

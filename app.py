@@ -31,6 +31,7 @@ from core.pattern_detector import PatternDetector
 from core.bayesian_router import BayesianRouter
 from core.action_executor import ActionExecutor
 from core.learning_engine import LearningEngine
+from core.persistence import StatePersistence
 from agents.optimizer import OptimizerAgent
 from agents.risk_officer import RiskOfficerAgent
 from agents.negotiator import NegotiationEngine
@@ -163,6 +164,13 @@ def init_session_state():
         st.session_state.router = BayesianRouter()
         st.session_state.executor = ActionExecutor()
         st.session_state.learner = LearningEngine()
+        st.session_state.persistence = StatePersistence()
+        
+        # Restore router state from database (learning persistence)
+        try:
+            st.session_state.persistence.restore_router_state(st.session_state.router)
+        except Exception as e:
+            pass  # First run, no state to restore
         
         # Agents
         st.session_state.optimizer = OptimizerAgent()
@@ -181,10 +189,15 @@ def init_session_state():
         st.session_state.historical_metrics = deque(maxlen=100)
         st.session_state.current_batch = TransactionBatch()
         
+        # Shadow Mode State
+        st.session_state.shadow_mode = False
+        st.session_state.shadow_stats = {"correct": 0, "total": 0, "predictions": []}
+        
         # Counters
         st.session_state.tick_count = 0
         st.session_state.last_chaos_check = datetime.now()
         st.session_state.last_agent_check = datetime.now()
+        st.session_state.last_save_time = datetime.now()
         
         st.session_state.initialized = True
 
@@ -293,6 +306,14 @@ def run_simulation_tick():
     if (now - st.session_state.last_agent_check).total_seconds() > 5:
         _run_agent_decision_loop()
         st.session_state.last_agent_check = now
+    
+    # Periodically save state (every 60 seconds)
+    if (now - st.session_state.last_save_time).total_seconds() > 60:
+        try:
+            st.session_state.persistence.save_all_router_state(st.session_state.router)
+        except Exception:
+            pass  # Ignore save errors
+        st.session_state.last_save_time = now
     
     # Record metrics
     _record_metrics()
@@ -439,6 +460,20 @@ def on_reject_action(action_id: str):
     st.toast("❌ Action rejected", icon="❌")
 
 
+def on_chaos_level_change(level: float):
+    """Update chaos level in simulation config."""
+    config.simulation.chaos_level = level
+
+
+def on_shadow_mode_toggle(enabled: bool):
+    """Toggle shadow mode."""
+    st.session_state.shadow_mode = enabled
+    if enabled:
+        st.toast("👻 Shadow Mode enabled - agent will predict but not execute", icon="👻")
+    else:
+        st.toast("🚀 Going Live - agent will now execute decisions", icon="🚀")
+
+
 # =============================================================================
 # MAIN APP
 # =============================================================================
@@ -468,7 +503,12 @@ def main():
         on_inject_chaos=on_inject_chaos,
         on_clear_chaos=on_clear_chaos,
         on_toggle_simulation=on_toggle_simulation,
-        is_running=st.session_state.is_running
+        on_chaos_level_change=on_chaos_level_change,
+        on_shadow_mode_toggle=on_shadow_mode_toggle,
+        is_running=st.session_state.is_running,
+        shadow_mode=st.session_state.shadow_mode,
+        shadow_stats=st.session_state.shadow_stats,
+        margin_generated=st.session_state.router.margin_generated
     )
     
     # Main content tabs

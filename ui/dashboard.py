@@ -19,7 +19,12 @@ def render_sidebar(
     on_inject_chaos: callable = None,
     on_clear_chaos: callable = None,
     on_toggle_simulation: callable = None,
-    is_running: bool = False
+    on_chaos_level_change: callable = None,
+    on_shadow_mode_toggle: callable = None,
+    is_running: bool = False,
+    shadow_mode: bool = False,
+    shadow_stats: Dict = None,
+    margin_generated: float = 0.0
 ) -> Dict[str, Any]:
     """Render the sidebar with controls and stats."""
     
@@ -80,6 +85,55 @@ def render_sidebar(
         if st.button("🔥 Inject Chaos", use_container_width=True, type="primary"):
             if on_inject_chaos:
                 on_inject_chaos(chaos_type)
+        
+        # Chaos Level Slider
+        st.markdown("---")
+        st.subheader("🎚️ Chaos Level")
+        chaos_level = st.slider(
+            "Intensity",
+            min_value=0,
+            max_value=100,
+            value=int(config.simulation.chaos_level * 100),
+            help="0% = No chaos effects, 100% = Full chaos intensity"
+        )
+        if on_chaos_level_change:
+            on_chaos_level_change(chaos_level / 100.0)
+        
+        st.divider()
+        
+        # Shadow Mode Toggle
+        st.subheader("👻 Shadow Mode")
+        shadow_enabled = st.toggle(
+            "Enable Shadow Mode",
+            value=shadow_mode,
+            help="Agent predicts but doesn't execute. Track accuracy before going live."
+        )
+        if on_shadow_mode_toggle and shadow_enabled != shadow_mode:
+            on_shadow_mode_toggle(shadow_enabled)
+        
+        if shadow_stats:
+            correct = shadow_stats.get("correct", 0)
+            total = shadow_stats.get("total", 0)
+            accuracy = correct / total if total > 0 else 0
+            st.metric(
+                "Shadow Accuracy",
+                f"{correct}/{total}",
+                delta=f"{accuracy:.0%}" if total > 0 else None
+            )
+            if shadow_mode and total >= 10:
+                if st.button("🚀 Go Live", use_container_width=True, type="primary"):
+                    if on_shadow_mode_toggle:
+                        on_shadow_mode_toggle(False)
+        
+        st.divider()
+        
+        # Revenue Impact
+        st.subheader("💰 Revenue Impact")
+        st.metric(
+            "Extra Margin Generated",
+            f"₹{margin_generated:,.2f}",
+            help="Additional profit from EV-optimized routing vs naive routing"
+        )
         
         st.divider()
         

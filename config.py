@@ -58,19 +58,23 @@ class AgentRole(Enum):
 class SimulationConfig:
     """Configuration for the payment simulation engine."""
     transactions_per_second: float = 10.0
-    chaos_probability: float = 0.15  # Probability of chaos event per tick
+    chaos_probability: float = 0.08  # Reduced from 0.15 for better demo
+    chaos_level: float = 0.5  # 0.0-1.0 multiplier for chaos effects
     
     # Banks/Issuers
     banks: List[str] = None
     
-    # Base success rates by method
+    # Base success rates by method (improved for demo)
     base_success_rates: Dict[str, float] = None
     
-    # Base latency (ms) by method
+    # Base latency (ms) by method (reduced for demo)
     base_latency: Dict[str, tuple] = None  # (mean, std)
     
     # Error codes with weights
     error_codes: Dict[str, float] = None
+    
+    # Provider fees for cost arbitrage
+    provider_fees: Dict[str, float] = None
     
     def __post_init__(self):
         if self.banks is None:
@@ -81,18 +85,27 @@ class SimulationConfig:
         
         if self.base_success_rates is None:
             self.base_success_rates = {
-                PaymentMethod.CARD.value: 0.92,
-                PaymentMethod.UPI.value: 0.95,
-                PaymentMethod.WALLET.value: 0.97,
-                PaymentMethod.NETBANKING.value: 0.88
+                PaymentMethod.CARD.value: 0.96,
+                PaymentMethod.UPI.value: 0.98,
+                PaymentMethod.WALLET.value: 0.99,
+                PaymentMethod.NETBANKING.value: 0.94
             }
         
         if self.base_latency is None:
             self.base_latency = {
-                PaymentMethod.CARD.value: (1200, 400),
-                PaymentMethod.UPI.value: (800, 200),
-                PaymentMethod.WALLET.value: (500, 100),
-                PaymentMethod.NETBANKING.value: (2000, 600)
+                PaymentMethod.CARD.value: (400, 100),
+                PaymentMethod.UPI.value: (200, 50),
+                PaymentMethod.WALLET.value: (150, 40),
+                PaymentMethod.NETBANKING.value: (600, 150)
+            }
+        
+        if self.provider_fees is None:
+            self.provider_fees = {
+                "razorpay": 0.020,
+                "paytm": 0.018,
+                "phonepe": 0.015,
+                "billdesk": 0.010,
+                "ccavenue": 0.025,
             }
         
         if self.error_codes is None:

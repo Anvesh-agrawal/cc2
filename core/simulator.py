@@ -236,6 +236,9 @@ class PaymentSimulator:
         latency_mod = 1.0
         error_override = None
         
+        # Get chaos level from config (0.0 = no chaos, 1.0 = full chaos)
+        chaos_level = getattr(self.config, 'chaos_level', 0.5)
+        
         # Clean up expired scenarios
         self.active_scenarios = [s for s in self.active_scenarios if s.is_active]
         
@@ -256,8 +259,13 @@ class PaymentSimulator:
                 applies = True
             
             if applies:
-                success_mod *= scenario.success_rate_modifier
-                latency_mod *= scenario.latency_modifier
+                # Scale chaos effects by chaos_level
+                # At chaos_level=0, no effect. At chaos_level=1, full effect.
+                scaled_success_mod = 1.0 - (1.0 - scenario.success_rate_modifier) * chaos_level
+                scaled_latency_mod = 1.0 + (scenario.latency_modifier - 1.0) * chaos_level
+                
+                success_mod *= scaled_success_mod
+                latency_mod *= scaled_latency_mod
                 if scenario.error_code_override:
                     error_override = scenario.error_code_override
         

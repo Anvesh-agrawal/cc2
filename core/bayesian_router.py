@@ -21,8 +21,9 @@ class BayesianRouter:
     Features:
     - Multi-armed bandit approach for route selection
     - Balances exploration and exploitation
-    - Multi-factor optimization (success, latency, cost)
+    - Multi-factor optimization (success, latency, cost, EV)
     - Maintains Beta distribution priors per route
+    - Game-theoretic EV-based routing for profit maximization
     """
     
     def __init__(self, config: OptimizerConfig = None):
@@ -39,6 +40,21 @@ class BayesianRouter:
         
         # Suppressed routes
         self.suppressed_routes: Dict[str, datetime] = {}
+        
+        # Provider fees for EV calculation (from config or defaults)
+        from config import config as global_config
+        self.provider_fees = getattr(global_config.simulation, 'provider_fees', {
+            "razorpay": 0.020,
+            "paytm": 0.018,
+            "phonepe": 0.015,
+            "billdesk": 0.010,
+            "ccavenue": 0.025,
+        })
+        
+        # Margin tracking for cost arbitrage
+        self.margin_generated: float = 0.0
+        self.baseline_margin: float = 0.0  # What naive routing would have earned
+        self.smart_margin: float = 0.0     # What EV routing earned
     
     def register_route(
         self,
@@ -76,6 +92,22 @@ class BayesianRouter:
         
         # Update stats
         self.routes[route_id].update(transaction)
+        
+        # Update margin tracking
+        if transaction.is_successful:
+            gateway = transaction.gateway
+            fee = self.provider_fees.get(gateway, 0.02)
+            amount = transaction.amount
+            
+            # Smart routing earned
+            self.smart_margin += amount * (1 - fee)
+            
+            # Baseline: what if we used highest-fee provider?
+            max_fee = max(self.provider_fees.values())
+            self.baseline_margin += amount * (1 - max_fee)
+            
+            # Extra margin generated
+            self.margin_generated = self.smart_margin - self.baseline_margin
         
         # Record in history
         self.route_history[route_id].append(
@@ -125,11 +157,18 @@ class BayesianRouter:
             # Thompson Sampling: sample from Beta distribution
             success_sample = route.get_thompson_sample()
             
+            # Get provider fee for EV calculation
+            fee = self.provider_fees.get(gateway, 0.02)
+            
+            # Calculate Expected Value: EV = success_prob * (1 - fee)
+            # Higher EV = higher probability of success with lower fees
+            ev_score = success_sample * (1 - fee)
+            
             # Add exploration bonus for less-tried routes
             exploration_bonus = self.config.exploration_bonus / (1 + np.log1p(route.total_transactions))
             
-            # Calculate composite score
-            score = self._calculate_route_score(route, success_sample, exploration_bonus)
+            # Calculate composite score with EV
+            score = self._calculate_route_score(route, success_sample, exploration_bonus, ev_score, fee)
             
             candidates.append({
                 "route_id": route_id,
@@ -139,7 +178,9 @@ class BayesianRouter:
                 "historical_success": route.success_rate,
                 "avg_latency": route.avg_latency,
                 "total_transactions": route.total_transactions,
-                "exploration_bonus": exploration_bonus
+                "exploration_bonus": exploration_bonus,
+                "fee": fee,
+                "ev_score": ev_score
             })
         
         if not candidates:
@@ -166,27 +207,42 @@ class BayesianRouter:
             "historical_success": best["historical_success"],
             "avg_latency": best["avg_latency"],
             "candidates_evaluated": len(candidates),
-            "exploration_bonus": best["exploration_bonus"]
+            "exploration_bonus": best["exploration_bonus"],
+            "fee": best["fee"],
+            "ev_score": best["ev_score"]
         }
     
     def _calculate_route_score(
         self,
         route: RouteStats,
         success_sample: float,
-        exploration_bonus: float
+        exploration_bonus: float,
+        ev_score: float = None,
+        fee: float = 0.02
     ) -> float:
-        """Calculate composite score for a route."""
+        """Calculate composite score for a route with EV optimization."""
         # Normalize latency (lower is better, cap at 5000ms)
         latency_score = 1.0 - min(route.avg_latency, 5000) / 5000
         
         # Normalize cost (lower is better, cap at 5.0)
         cost_score = 1.0 - min(route.avg_cost, 5.0) / 5.0
         
-        # Weighted composite
+        # EV score (if not provided, calculate it)
+        if ev_score is None:
+            ev_score = success_sample * (1 - fee)
+        
+        # Fee advantage score (lower fees = higher score)
+        max_fee = max(self.provider_fees.values()) if self.provider_fees else 0.025
+        fee_score = 1.0 - (fee / max_fee)
+        
+        # Weighted composite with EV being a major factor
+        # EV captures both success probability AND fee efficiency
         score = (
-            self.config.success_weight * success_sample +
+            self.config.success_weight * 0.5 * success_sample +  # Reduced success weight
+            self.config.success_weight * 0.5 * ev_score +        # Added EV weight
             self.config.latency_weight * latency_score +
-            self.config.cost_weight * cost_score +
+            self.config.cost_weight * 0.5 * cost_score +
+            self.config.cost_weight * 0.5 * fee_score +          # Fee efficiency
             exploration_bonus
         )
         
