@@ -1,0 +1,14 @@
+# Antigravity - Agentic AI for Smart Payment Operations
+# Requirements
+
+# Core
+streamlit>=1.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# Visualization
+plotly>=5.18.0
+
+# Utilities
+python-dateutil>=2.8.0
