@@ -189,9 +189,10 @@ def init_session_state():
         st.session_state.historical_metrics = deque(maxlen=100)
         st.session_state.current_batch = TransactionBatch()
         
-        # Shadow Mode State
-        st.session_state.shadow_mode = False
-        st.session_state.shadow_stats = {"correct": 0, "total": 0, "predictions": []}
+        # Agent ON/OFF State with dual margin tracking
+        st.session_state.agent_enabled = True  # Start with agent ON
+        st.session_state.agent_margin = 0.0    # Margin earned with smart routing
+        st.session_state.naive_margin = 0.0    # What naive routing would earn
         
         # Counters
         st.session_state.tick_count = 0
@@ -293,6 +294,25 @@ def run_simulation_tick():
         # Update router stats
         st.session_state.router.update_route(txn)
         
+        # Track margins based on agent ON/OFF state
+        if txn.is_successful:
+            # Get gateway fee (smart routing would pick low-fee gateway)
+            smart_fee = st.session_state.router.provider_fees.get(txn.gateway, 0.02)
+            # Naive routing would use highest-fee gateway
+            naive_fee = max(st.session_state.router.provider_fees.values())
+            
+            smart_profit = txn.amount * (1 - smart_fee)
+            naive_profit = txn.amount * (1 - naive_fee)
+            
+            if st.session_state.agent_enabled:
+                # Agent ON: We're using smart routing
+                st.session_state.agent_margin += smart_profit
+                st.session_state.naive_margin += naive_profit  # What we'd lose without agent
+            else:
+                # Agent OFF: We're using naive routing but track what agent would earn
+                st.session_state.naive_margin += naive_profit
+                st.session_state.agent_margin += smart_profit  # What we're missing
+        
         # Store transaction
         st.session_state.transactions.append(txn.to_dict())
         st.session_state.current_batch.transactions.append(txn)
@@ -302,8 +322,8 @@ def run_simulation_tick():
         st.session_state.simulator.inject_random_chaos()
         st.session_state.last_chaos_check = now
     
-    # Periodically run agent decision loop
-    if (now - st.session_state.last_agent_check).total_seconds() > 5:
+    # Periodically run agent decision loop (only if agent is ON)
+    if st.session_state.agent_enabled and (now - st.session_state.last_agent_check).total_seconds() > 5:
         _run_agent_decision_loop()
         st.session_state.last_agent_check = now
     
@@ -465,13 +485,13 @@ def on_chaos_level_change(level: float):
     config.simulation.chaos_level = level
 
 
-def on_shadow_mode_toggle(enabled: bool):
-    """Toggle shadow mode."""
-    st.session_state.shadow_mode = enabled
+def on_agent_toggle(enabled: bool):
+    """Toggle agent ON/OFF."""
+    st.session_state.agent_enabled = enabled
     if enabled:
-        st.toast("👻 Shadow Mode enabled - agent will predict but not execute", icon="👻")
+        st.toast("🤖 Agent ENABLED - using smart EV-optimized routing", icon="✅")
     else:
-        st.toast("🚀 Going Live - agent will now execute decisions", icon="🚀")
+        st.toast("⚠️ Agent DISABLED - using naive routing", icon="⚠️")
 
 
 # =============================================================================
@@ -504,11 +524,11 @@ def main():
         on_clear_chaos=on_clear_chaos,
         on_toggle_simulation=on_toggle_simulation,
         on_chaos_level_change=on_chaos_level_change,
-        on_shadow_mode_toggle=on_shadow_mode_toggle,
+        on_agent_toggle=on_agent_toggle,
         is_running=st.session_state.is_running,
-        shadow_mode=st.session_state.shadow_mode,
-        shadow_stats=st.session_state.shadow_stats,
-        margin_generated=st.session_state.router.margin_generated
+        agent_enabled=st.session_state.agent_enabled,
+        agent_margin=st.session_state.agent_margin,
+        naive_margin=st.session_state.naive_margin
     )
     
     # Main content tabs

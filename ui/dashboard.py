@@ -20,11 +20,11 @@ def render_sidebar(
     on_clear_chaos: callable = None,
     on_toggle_simulation: callable = None,
     on_chaos_level_change: callable = None,
-    on_shadow_mode_toggle: callable = None,
+    on_agent_toggle: callable = None,
     is_running: bool = False,
-    shadow_mode: bool = False,
-    shadow_stats: Dict = None,
-    margin_generated: float = 0.0
+    agent_enabled: bool = True,
+    agent_margin: float = 0.0,
+    naive_margin: float = 0.0
 ) -> Dict[str, Any]:
     """Render the sidebar with controls and stats."""
     
@@ -101,39 +101,55 @@ def render_sidebar(
         
         st.divider()
         
-        # Shadow Mode Toggle
-        st.subheader("👻 Shadow Mode")
-        shadow_enabled = st.toggle(
-            "Enable Shadow Mode",
-            value=shadow_mode,
-            help="Agent predicts but doesn't execute. Track accuracy before going live."
+        # Agent ON/OFF Toggle with Value Comparison
+        st.subheader("🤖 Agent Control")
+        
+        agent_on = st.toggle(
+            "Agent Enabled",
+            value=agent_enabled,
+            help="Turn ON for smart EV-optimized routing. Turn OFF to use naive routing."
         )
-        if on_shadow_mode_toggle and shadow_enabled != shadow_mode:
-            on_shadow_mode_toggle(shadow_enabled)
+        if on_agent_toggle and agent_on != agent_enabled:
+            on_agent_toggle(agent_on)
         
-        if shadow_stats:
-            correct = shadow_stats.get("correct", 0)
-            total = shadow_stats.get("total", 0)
-            accuracy = correct / total if total > 0 else 0
-            st.metric(
-                "Shadow Accuracy",
-                f"{correct}/{total}",
-                delta=f"{accuracy:.0%}" if total > 0 else None
-            )
-            if shadow_mode and total >= 10:
-                if st.button("🚀 Go Live", use_container_width=True, type="primary"):
-                    if on_shadow_mode_toggle:
-                        on_shadow_mode_toggle(False)
+        # Value Comparison Display
+        margin_diff = agent_margin - naive_margin
         
-        st.divider()
-        
-        # Revenue Impact
-        st.subheader("💰 Revenue Impact")
-        st.metric(
-            "Extra Margin Generated",
-            f"₹{margin_generated:,.2f}",
-            help="Additional profit from EV-optimized routing vs naive routing"
-        )
+        if agent_on:
+            # Agent is ON - show what we're earning
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                border-radius: 0.75rem;
+                padding: 1rem;
+                margin: 0.5rem 0;
+                text-align: center;
+            ">
+                <p style="color: #D1FAE5; font-size: 0.8rem; margin: 0;">Smart Routing Active</p>
+                <p style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0;">₹{agent_margin:,.2f}</p>
+                <p style="color: #A7F3D0; font-size: 0.75rem; margin: 0;">✅ Extra vs naive: ₹{margin_diff:,.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            # Agent is OFF - show what we're losing
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+                border-radius: 0.75rem;
+                padding: 1rem;
+                margin: 0.5rem 0;
+                text-align: center;
+            ">
+                <p style="color: #FEE2E2; font-size: 0.8rem; margin: 0;">Naive Routing (No Agent)</p>
+                <p style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0;">₹{naive_margin:,.2f}</p>
+                <p style="color: #FECACA; font-size: 0.75rem; margin: 0;">⚠️ You're losing: ₹{margin_diff:,.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Prominent button to turn ON
+            if st.button("🚀 Turn ON Agent", use_container_width=True, type="primary"):
+                if on_agent_toggle:
+                    on_agent_toggle(True)
         
         st.divider()
         
