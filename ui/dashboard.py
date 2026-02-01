@@ -29,20 +29,56 @@ def render_sidebar(
     """Render the sidebar with controls and stats."""
     
     with st.sidebar:
-        # Logo and title
+        # Logo and title with floating animation
         st.markdown("""
-        <div style="text-align: center; padding: 1rem 0;">
-            <h1 style="
-                background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 50%, #3B82F6 100%);
+        <style>
+            @keyframes logoFloat {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-3px); }
+            }
+            @keyframes gradientShift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            .logo-container {
+                text-align: center;
+                padding: 1.5rem 0;
+                animation: fadeIn 0.5s ease-out;
+            }
+            .logo-icon {
+                display: inline-block;
+                animation: logoFloat 3s ease-in-out infinite;
+            }
+            .logo-text {
+                background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 30%, #3B82F6 60%, #8B5CF6 100%);
+                background-size: 200% 200%;
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
+                background-clip: text;
                 font-size: 2rem;
                 font-weight: 800;
                 margin: 0;
-            ">⚡ Antigravity</h1>
-            <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.5rem;">
-                Agentic Payment Operations
-            </p>
+                letter-spacing: -0.02em;
+                animation: gradientShift 4s ease infinite;
+            }
+            .logo-subtitle {
+                color: #64748B;
+                font-size: 0.8rem;
+                margin-top: 0.5rem;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                font-weight: 500;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        </style>
+        <div class="logo-container">
+            <span class="logo-icon" style="font-size: 2.5rem;">⚡</span>
+            <h1 class="logo-text">Antigravity</h1>
+            <p class="logo-subtitle">Agentic Payment Operations</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -77,7 +113,8 @@ def render_sidebar(
                 "method_fatigue",
                 "latency_spike",
                 "gateway_issues",
-                "peak_hour_load"
+                "peak_hour_load",
+                "payload_error"
             ],
             format_func=lambda x: x.replace("_", " ").title()
         )
@@ -195,21 +232,56 @@ def render_dashboard_header(current_metrics: Dict[str, float]):
     st.markdown("""
     <style>
         .metric-card {
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 1rem;
             padding: 1.5rem;
-            border: 1px solid #334155;
+            border: 1px solid rgba(148, 163, 184, 0.1);
             text-align: center;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: metricSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         }
+        .metric-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(139, 92, 246, 0.15);
+        }
+        .metric-card-1 { animation-delay: 0ms; }
+        .metric-card-2 { animation-delay: 80ms; }
+        .metric-card-3 { animation-delay: 160ms; }
+        .metric-card-4 { animation-delay: 240ms; }
+        
+        @keyframes metricSlideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
         .metric-value {
             font-size: 2.5rem;
             font-weight: 700;
             margin: 0;
+            letter-spacing: -0.02em;
+            text-shadow: 0 0 30px currentColor;
         }
         .metric-label {
             color: #94A3B8;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+        .metric-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
         }
         .metric-delta {
             font-size: 0.85rem;
@@ -229,8 +301,10 @@ def render_dashboard_header(current_metrics: Dict[str, float]):
     
     with cols[0]:
         color = "#10B981" if success_rate >= 0.9 else "#F59E0B" if success_rate >= 0.8 else "#EF4444"
+        icon = "✅" if success_rate >= 0.9 else "⚠️" if success_rate >= 0.8 else "❌"
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-1">
+            <div class="metric-icon">{icon}</div>
             <p class="metric-value" style="color: {color};">{success_rate:.1%}</p>
             <p class="metric-label">Success Rate</p>
         </div>
@@ -238,8 +312,10 @@ def render_dashboard_header(current_metrics: Dict[str, float]):
     
     with cols[1]:
         color = "#10B981" if avg_latency < 1500 else "#F59E0B" if avg_latency < 2500 else "#EF4444"
+        icon = "⚡" if avg_latency < 1500 else "🕐" if avg_latency < 2500 else "🐌"
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-2">
+            <div class="metric-icon">{icon}</div>
             <p class="metric-value" style="color: {color};">{avg_latency:.0f}ms</p>
             <p class="metric-label">Avg Latency</p>
         </div>
@@ -247,8 +323,10 @@ def render_dashboard_header(current_metrics: Dict[str, float]):
     
     with cols[2]:
         color = "#10B981" if retry_rate < 0.1 else "#F59E0B" if retry_rate < 0.2 else "#EF4444"
+        icon = "🔄" if retry_rate < 0.1 else "⚠️" if retry_rate < 0.2 else "🔥"
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-3">
+            <div class="metric-icon">{icon}</div>
             <p class="metric-value" style="color: {color};">{retry_rate:.1%}</p>
             <p class="metric-label">Retry Rate</p>
         </div>
@@ -256,7 +334,8 @@ def render_dashboard_header(current_metrics: Dict[str, float]):
     
     with cols[3]:
         st.markdown(f"""
-        <div class="metric-card">
+        <div class="metric-card metric-card-4">
+            <div class="metric-icon">📊</div>
             <p class="metric-value" style="color: #8B5CF6;">{throughput}</p>
             <p class="metric-label">TPS</p>
         </div>
@@ -354,22 +433,36 @@ def render_transaction_feed(transactions: List[Dict], max_display: int = 20):
         retry_badge = "🔄 " if is_retry else ""
         
         st.markdown(f"""
-        <div style="
+        <div class="txn-item" style="
             display: flex;
             align-items: center;
-            padding: 0.5rem;
-            margin: 0.25rem 0;
-            background: #1E293B;
+            padding: 0.75rem 1rem;
+            margin: 0.35rem 0;
+            background: linear-gradient(90deg, rgba(30, 41, 59, 0.8) 0%, rgba(30, 41, 59, 0.4) 100%);
+            backdrop-filter: blur(5px);
             border-radius: 0.5rem;
             border-left: 3px solid {status_color};
             font-size: 0.85rem;
+            transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: txnSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         ">
-            <span style="margin-right: 0.5rem;">{status_icon}</span>
-            <span style="color: #94A3B8; min-width: 80px;">{retry_badge}{method}</span>
-            <span style="color: #E2E8F0; min-width: 80px;">{bank}</span>
-            <span style="color: #94A3B8; min-width: 80px;">₹{amount:,.0f}</span>
-            <span style="color: #94A3B8; margin-left: auto;">{latency:.0f}ms</span>
+            <span style="margin-right: 0.75rem; font-size: 1.1rem;">{status_icon}</span>
+            <span style="color: #94A3B8; min-width: 70px; font-weight: 500;">{retry_badge}{method}</span>
+            <span style="color: #E2E8F0; min-width: 90px; font-weight: 500;">{bank}</span>
+            <span style="color: #10B981; min-width: 90px; font-weight: 600;">₹{amount:,.0f}</span>
+            <span style="color: #64748B; margin-left: auto; font-family: monospace;">{latency:.0f}ms</span>
         </div>
+        <style>
+            @keyframes txnSlideIn {{
+                from {{ opacity: 0; transform: translateX(20px); }}
+                to {{ opacity: 1; transform: translateX(0); }}
+            }}
+            .txn-item:hover {{
+                background: linear-gradient(90deg, rgba(30, 41, 59, 0.95) 0%, rgba(30, 41, 59, 0.6) 100%);
+                transform: translateX(4px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }}
+        </style>
         """, unsafe_allow_html=True)
 
 
@@ -406,24 +499,56 @@ def render_action_history(actions: List[Dict]):
         time_str = executed_at.strftime("%H:%M:%S") if isinstance(executed_at, datetime) else str(executed_at)[:8]
         
         st.markdown(f"""
-        <div style="
-            padding: 0.75rem;
+        <div class="action-card" style="
+            padding: 1rem;
             margin: 0.5rem 0;
-            background: linear-gradient(90deg, {color}22 0%, transparent 100%);
-            border-radius: 0.5rem;
-            border-left: 3px solid {color};
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
+            backdrop-filter: blur(8px);
+            border-radius: 0.75rem;
+            border-left: 4px solid {color};
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-left: 4px solid {color};
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: actionScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) backwards;
         ">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600;">{status_icon} {action_type}</span>
-                <span style="color: #94A3B8; font-size: 0.8rem;">{time_str}</span>
+                <span style="font-weight: 600; font-size: 0.95rem; color: #F1F5F9;">{status_icon} {action_type}</span>
+                <span style="
+                    color: #64748B; 
+                    font-size: 0.75rem; 
+                    background: rgba(100, 116, 139, 0.2);
+                    padding: 0.2rem 0.5rem;
+                    border-radius: 0.25rem;
+                    font-family: monospace;
+                ">{time_str}</span>
             </div>
-            <div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.25rem;">
+            <div style="color: #94A3B8; font-size: 0.85rem; margin-top: 0.5rem; line-height: 1.4;">
                 {action.get("description", "")}
             </div>
-            <div style="color: {color}; font-size: 0.8rem; margin-top: 0.25rem;">
+            <div style="
+                color: {color}; 
+                font-size: 0.8rem; 
+                margin-top: 0.5rem; 
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            ">
+                <span style="width: 6px; height: 6px; background: {color}; border-radius: 50%; display: inline-block;"></span>
                 {status_text}
             </div>
         </div>
+        <style>
+            @keyframes actionScaleIn {{
+                from {{ opacity: 0; transform: scale(0.95) translateY(10px); }}
+                to {{ opacity: 1; transform: scale(1) translateY(0); }}
+            }}
+            .action-card:hover {{
+                transform: translateX(4px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                border-color: rgba(139, 92, 246, 0.3);
+            }}
+        </style>
         """, unsafe_allow_html=True)
 
 

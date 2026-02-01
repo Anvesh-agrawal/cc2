@@ -40,6 +40,7 @@ class ActionType(Enum):
     CIRCUIT_BREAK = "circuit_break"
     RECOMMEND_METHOD = "recommend_method"
     ALERT_OPS = "alert_ops"
+    MUTATE_PAYLOAD = "mutate_payload"
 
 class AutonomyLevel(Enum):
     AUTONOMOUS = "autonomous"          # No human needed
@@ -124,7 +125,11 @@ class SimulationConfig:
                 "E012_DUPLICATE_TXN": 0.02,
                 "E013_BANK_THROTTLING": 0.06,
                 "E014_GATEWAY_ERROR": 0.04,
-                "E015_3DS_FAILURE": 0.05
+                "E015_3DS_FAILURE": 0.05,
+                "E016_INVALID_ADDRESS": 0.04,
+                "E017_INVALID_PHONE": 0.03,
+                "E018_INVALID_NAME": 0.02,
+                "E019_FIELD_TOO_LONG": 0.02
             }
 
 # =============================================================================
@@ -187,8 +192,8 @@ class RiskOfficerConfig:
     max_cost_per_txn: float = 5.0  # rupees
     fraud_score_threshold: float = 0.7
     
-    # Rate limiting
-    max_actions_per_window: int = 3
+    # Rate limiting (increased for demo purposes)
+    max_actions_per_window: int = 10
     action_window_seconds: int = 300  # 5 minutes
     
     # Rollback triggers

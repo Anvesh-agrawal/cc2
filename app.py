@@ -35,6 +35,7 @@ from core.persistence import StatePersistence
 from agents.optimizer import OptimizerAgent
 from agents.risk_officer import RiskOfficerAgent
 from agents.negotiator import NegotiationEngine
+from agents.payload_mutator import PayloadMutatorAgent
 from models.transaction import Transaction, TransactionBatch
 from models.hypothesis import ActionRecommendation
 
@@ -50,7 +51,8 @@ from ui.dashboard import (
 from ui.agent_panel import (
     render_agent_panel,
     render_negotiation_panel,
-    render_learning_insights
+    render_learning_insights,
+    render_payload_mutations
 )
 from ui.metrics import (
     render_metrics,
@@ -67,82 +69,389 @@ from ui.metrics import (
 
 st.markdown("""
 <style>
-    /* Dark theme overrides */
+    /* =================================================================
+       DESIGN TOKENS - Consistent spacing and colors
+       ================================================================= */
+    :root {
+        /* Spacing scale (8px base) */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        
+        /* Colors */
+        --bg-primary: #0F172A;
+        --bg-secondary: #1E293B;
+        --bg-tertiary: #334155;
+        --border-subtle: rgba(148, 163, 184, 0.1);
+        --border-default: rgba(148, 163, 184, 0.2);
+        
+        /* Accent colors */
+        --accent-primary: #8B5CF6;
+        --accent-secondary: #6366F1;
+        --accent-glow: rgba(139, 92, 246, 0.4);
+        
+        /* Semantic colors */
+        --success: #10B981;
+        --warning: #F59E0B;
+        --error: #EF4444;
+        --info: #3B82F6;
+        
+        /* Text */
+        --text-primary: #F1F5F9;
+        --text-secondary: #94A3B8;
+        --text-muted: #64748B;
+        
+        /* Animation */
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+        --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        --duration-fast: 150ms;
+        --duration-normal: 200ms;
+        --duration-slow: 300ms;
+    }
+    
+    /* =================================================================
+       KEYFRAME ANIMATIONS
+       ================================================================= */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from { 
+            opacity: 0; 
+            transform: translateY(20px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+    
+    @keyframes slideInRight {
+        from { 
+            opacity: 0; 
+            transform: translateX(30px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateX(0); 
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+        50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+    }
+    
+    @keyframes scaleIn {
+        from { 
+            opacity: 0; 
+            transform: scale(0.95); 
+        }
+        to { 
+            opacity: 1; 
+            transform: scale(1); 
+        }
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* =================================================================
+       BASE STYLES
+       ================================================================= */
     .stApp {
-        background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+        background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     }
     
-    /* Sidebar styling */
+    /* Sidebar with glassmorphism */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
-        border-right: 1px solid #334155;
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid var(--border-subtle);
+        animation: fadeIn var(--duration-slow) var(--ease-out);
     }
     
-    /* Card styling */
+    /* =================================================================
+       METRIC CARDS - Animated entrance
+       ================================================================= */
     .stMetric {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        padding: 1rem;
-        border-radius: 0.75rem;
-        border: 1px solid #334155;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: var(--space-4);
+        border-radius: var(--space-3);
+        border: 1px solid var(--border-subtle);
+        animation: slideUp var(--duration-normal) var(--ease-out);
+        transition: all var(--duration-fast) var(--ease-out);
     }
     
-    /* Button styling */
+    .stMetric:hover {
+        border-color: var(--accent-glow);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* =================================================================
+       BUTTONS - Interactive with feedback
+       ================================================================= */
     .stButton > button {
-        background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
         color: white;
         border: none;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
+        border-radius: var(--space-2);
+        padding: var(--space-2) var(--space-4);
         font-weight: 600;
-        transition: all 0.2s ease;
+        transition: all var(--duration-fast) var(--ease-out);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stButton > button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left var(--duration-slow) var(--ease-out);
     }
     
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 8px 25px var(--accent-glow);
     }
     
-    /* Tab styling */
+    .stButton > button:hover::before {
+        left: 100%;
+    }
+    
+    .stButton > button:active {
+        transform: translateY(0) scale(0.98);
+    }
+    
+    /* =================================================================
+       TABS - Smooth transitions
+       ================================================================= */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
-        background: #1E293B;
-        padding: 0.5rem;
-        border-radius: 0.75rem;
+        gap: var(--space-2);
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(10px);
+        padding: var(--space-2);
+        border-radius: var(--space-3);
+        border: 1px solid var(--border-subtle);
     }
     
     .stTabs [data-baseweb="tab"] {
         background: transparent;
-        color: #94A3B8;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
+        color: var(--text-secondary);
+        border-radius: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        transition: all var(--duration-fast) var(--ease-out);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--text-primary);
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
-        color: white;
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px var(--accent-glow);
+        animation: scaleIn var(--duration-fast) var(--ease-out);
     }
     
-    /* Expander styling */
+    /* =================================================================
+       EXPANDERS - Smooth open/close
+       ================================================================= */
     .streamlit-expanderHeader {
-        background: #1E293B;
-        border-radius: 0.5rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: var(--space-2);
+        border: 1px solid var(--border-subtle);
+        transition: all var(--duration-fast) var(--ease-out);
     }
     
-    /* Divider */
+    .streamlit-expanderHeader:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: var(--border-default);
+    }
+    
+    /* =================================================================
+       INPUTS - Enhanced focus states
+       ================================================================= */
+    .stSelectbox > div > div,
+    .stTextInput > div > div > input,
+    .stNumberInput > div > div > input {
+        background: rgba(30, 41, 59, 0.6) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: var(--space-2) !important;
+        transition: all var(--duration-fast) var(--ease-out) !important;
+    }
+    
+    .stSelectbox > div > div:hover,
+    .stTextInput > div > div > input:hover,
+    .stNumberInput > div > div > input:hover {
+        border-color: var(--border-default) !important;
+    }
+    
+    .stSelectbox > div > div:focus-within,
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--accent-glow) !important;
+    }
+    
+    /* =================================================================
+       TOGGLE - Smooth switch
+       ================================================================= */
+    .stToggle > label > div {
+        transition: all var(--duration-fast) var(--ease-out) !important;
+    }
+    
+    /* =================================================================
+       SLIDER - Enhanced track
+       ================================================================= */
+    .stSlider > div > div > div {
+        background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)) !important;
+    }
+    
+    /* =================================================================
+       DIVIDERS
+       ================================================================= */
     hr {
-        border-color: #334155;
+        border-color: var(--border-subtle);
+        opacity: 0.5;
     }
     
-    /* Text colors */
+    /* =================================================================
+       TYPOGRAPHY - Hierarchy
+       ================================================================= */
     h1, h2, h3, h4, h5, h6 {
-        color: #F1F5F9 !important;
+        color: var(--text-primary) !important;
+        animation: fadeIn var(--duration-normal) var(--ease-out);
+    }
+    
+    h1 { 
+        letter-spacing: -0.02em; 
+        font-weight: 700;
+    }
+    
+    h2, h3 { 
+        letter-spacing: -0.01em;
+        font-weight: 600;
     }
     
     p, span, label {
-        color: #E2E8F0;
+        color: var(--text-secondary);
     }
     
-    /* Hide Streamlit branding */
+    /* =================================================================
+       SCROLLBAR - Styled
+       ================================================================= */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+    }
+    
+    /* =================================================================
+       CUSTOM COMPONENT ANIMATIONS
+       ================================================================= */
+    .metric-card {
+        animation: slideUp var(--duration-normal) var(--ease-out);
+        transition: all var(--duration-fast) var(--ease-out);
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    .transaction-item {
+        animation: slideInRight var(--duration-slow) var(--ease-out);
+    }
+    
+    .pattern-alert {
+        animation: slideUp var(--duration-normal) var(--ease-out);
+    }
+    
+    .action-card {
+        animation: scaleIn var(--duration-normal) var(--ease-out);
+        transition: all var(--duration-fast) var(--ease-out);
+    }
+    
+    .action-card:hover {
+        transform: scale(1.01);
+    }
+    
+    /* Pulsing status indicator */
+    .status-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Floating animation for icons */
+    .float-icon {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    /* Shimmer loading effect */
+    .shimmer {
+        background: linear-gradient(
+            90deg,
+            rgba(30, 41, 59, 0.4) 0%,
+            rgba(51, 65, 85, 0.6) 50%,
+            rgba(30, 41, 59, 0.4) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+    
+    /* Glowing border effect */
+    .glow-border {
+        animation: glow 2s infinite;
+    }
+    
+    /* =================================================================
+       HIDE STREAMLIT BRANDING
+       ================================================================= */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -179,6 +488,7 @@ def init_session_state():
             st.session_state.optimizer,
             st.session_state.risk_officer
         )
+        st.session_state.payload_mutator = PayloadMutatorAgent()
         
         # Register action handlers
         _register_action_handlers()
@@ -269,6 +579,12 @@ def _register_action_handlers():
         return {"success": True, "message": "Ops team alerted"}
     
     executor.register_handler(ActionType.ALERT_OPS, handle_alert)
+    
+    # Payload mutation handler
+    def handle_mutate_payload(action: ActionRecommendation) -> Dict:
+        return {"success": True, "message": "Payload mutated and retried"}
+    
+    executor.register_handler(ActionType.MUTATE_PAYLOAD, handle_mutate_payload)
 
 
 # =============================================================================
@@ -287,6 +603,39 @@ def run_simulation_tick():
     num_txns = int(config.simulation.transactions_per_second)
     for _ in range(num_txns):
         txn = st.session_state.simulator.generate_transaction()
+        
+        # === PAYLOAD POLYMORPHISM ENGINE ===
+        # If transaction failed with payload error, try to mutate and retry
+        mutator = st.session_state.payload_mutator
+        if txn.is_failed and txn.error_code and mutator.can_mutate(txn.error_code, txn.gateway):
+            # Prepare payload for mutation
+            payload = {
+                "address_line1": txn.address_line1,
+                "phone_number": txn.phone_number,
+                "customer_name": txn.customer_name
+            }
+            
+            # Attempt mutation
+            mutated_payload, mutation_record = mutator.mutate_payload(
+                txn.id, txn.gateway, txn.error_code, payload
+            )
+            
+            if mutation_record:
+                # Simulate retry with mutated payload (higher success rate)
+                import random
+                retry_success = random.random() < 0.75  # 75% success after mutation
+                
+                # Record outcome
+                mutator.record_outcome(mutation_record.id, retry_success)
+                
+                # If mutation succeeded, update transaction status
+                if retry_success:
+                    from config import TransactionStatus
+                    txn.status = TransactionStatus.SUCCESS
+                    txn.was_mutated = True
+                    txn.mutation_id = mutation_record.id
+                    txn.error_code = None
+                    txn.error_message = None
         
         # Process through detector
         patterns = st.session_state.detector.process_transaction(txn)
@@ -562,6 +911,14 @@ def main():
         
         render_negotiation_panel(
             st.session_state.negotiator.get_recent_negotiations()
+        )
+        
+        st.divider()
+        
+        # Payload Polymorphism Engine panel
+        render_payload_mutations(
+            mutations=st.session_state.payload_mutator.get_recent_mutations(),
+            mutator_stats=st.session_state.payload_mutator.get_stats()
         )
     
     with tab3:

@@ -50,6 +50,16 @@ class Transaction:
     customer_id: str = ""
     region: str = "IN"
     
+    # Payload data (for mutation simulation)
+    address_line1: str = ""
+    phone_number: str = ""
+    customer_name: str = ""
+    
+    # Mutation tracking
+    was_mutated: bool = False
+    mutation_id: Optional[str] = None
+    original_payload: Optional[Dict] = None
+    
     def to_dict(self) -> Dict:
         """Convert to dictionary for DataFrame compatibility."""
         return {
@@ -72,7 +82,12 @@ class Transaction:
             "original_txn_id": self.original_txn_id,
             "merchant_id": self.merchant_id,
             "customer_id": self.customer_id,
-            "region": self.region
+            "region": self.region,
+            "address_line1": self.address_line1,
+            "phone_number": self.phone_number,
+            "customer_name": self.customer_name,
+            "was_mutated": self.was_mutated,
+            "mutation_id": self.mutation_id
         }
     
     @property
@@ -256,5 +271,9 @@ class RouteStats:
             "success_rate": self.success_rate,
             "avg_latency": self.avg_latency,
             "total_transactions": self.total_transactions,
+            "successful_transactions": self.successful_transactions,
+            "failed_transactions": self.failed_transactions,
+            "alpha": self.alpha,
+            "beta": self.beta,
             "is_suppressed": self.is_suppressed
         }

@@ -84,10 +84,37 @@ class PaymentSimulator:
             "latency_spike": self._create_latency_spike,
             "gateway_issues": self._create_gateway_issues,
             "peak_hour_load": self._create_peak_hour_load,
+            "payload_error": self._create_payload_error,
         }
         
         # Track retry history for retry storm simulation
         self.pending_retries: List[Tuple[Transaction, int]] = []  # (original_txn, retry_attempt)
+        
+        # Payload data templates (some with problematic characters)
+        self.addresses_clean = [
+            "123 Main Street", "456 Park Avenue", "789 Oak Lane",
+            "101 Hill Road", "202 Lake View", "303 Garden Path"
+        ]
+        self.addresses_problematic = [
+            "Apt #4, 123 Main St", "Building @Central", "Floor #2, Block &A",
+            "House No. 5/6, Lane #12", "C/O Mr. Sharma, Plot #99",
+            "Very Long Address Line That Exceeds The Maximum Length Allowed By Most Payment Gateways"
+        ]
+        self.names_clean = [
+            "Rahul Sharma", "Priya Singh", "Amit Kumar",
+            "Neha Patel", "Arjun Reddy", "Sneha Iyer"
+        ]
+        self.names_problematic = [
+            "José García", "François Müller", "Søren Bjørn",
+            "Héléne Côté", "Ñoño López", "Ólafur Björnsson"
+        ]
+        self.phones_clean = [
+            "9876543210", "8765432109", "7654321098"
+        ]
+        self.phones_problematic = [
+            "+91-9876-543-210", "(+91) 98765 43210", "91.9876.543.210",
+            "+91 9876 543 210", "09876-543-210"
+        ]
     
     def generate_transaction(self) -> Transaction:
         """Generate a single transaction with current chaos effects applied."""
@@ -146,6 +173,17 @@ class PaymentSimulator:
                 error_message = self._get_error_message(error_code)
             
             # Create transaction
+            # Generate payload data
+            use_problematic = random.random() < 0.15  # 15% have problematic data
+            if use_problematic:
+                address = random.choice(self.addresses_problematic)
+                name = random.choice(self.names_problematic)
+                phone = random.choice(self.phones_problematic)
+            else:
+                address = random.choice(self.addresses_clean)
+                name = random.choice(self.names_clean)
+                phone = random.choice(self.phones_clean)
+            
             txn = Transaction(
                 amount=round(random.uniform(100, 50000), 2),
                 payment_method=payment_method,
@@ -160,7 +198,10 @@ class PaymentSimulator:
                 processing_cost=round(random.uniform(0.5, 3.0), 2),
                 merchant_id=merchant,
                 customer_id=f"CUST_{random.randint(10000, 99999)}",
-                region=region
+                region=region,
+                address_line1=address,
+                phone_number=phone,
+                customer_name=name
             )
             
             # Maybe add to retry queue
@@ -294,7 +335,11 @@ class PaymentSimulator:
             "E012_DUPLICATE_TXN": "Duplicate transaction detected",
             "E013_BANK_THROTTLING": "Bank is throttling requests",
             "E014_GATEWAY_ERROR": "Payment gateway error",
-            "E015_3DS_FAILURE": "3D Secure authentication failed"
+            "E015_3DS_FAILURE": "3D Secure authentication failed",
+            "E016_INVALID_ADDRESS": "Invalid address format - special characters not allowed",
+            "E017_INVALID_PHONE": "Invalid phone number format",
+            "E018_INVALID_NAME": "Invalid customer name - ASCII characters only",
+            "E019_FIELD_TOO_LONG": "Address field exceeds maximum length"
         }
         return messages.get(code, "Unknown error")
     
@@ -394,6 +439,28 @@ class PaymentSimulator:
             latency_modifier=1.5,
             duration_seconds=duration,
             impact_probability=0.5
+        )
+    
+    def _create_payload_error(self, gateway: str = None, duration: int = 300) -> ChaosScenario:
+        """Create payload validation error scenario - gateway rejects certain payload formats."""
+        target_gateway = gateway or random.choice(self.gateways)
+        # Randomly choose which type of payload error
+        error_type = random.choice([
+            "E016_INVALID_ADDRESS",
+            "E017_INVALID_PHONE", 
+            "E018_INVALID_NAME",
+            "E019_FIELD_TOO_LONG"
+        ])
+        return ChaosScenario(
+            name=f"payload_error_{target_gateway}",
+            description=f"{target_gateway} rejecting transactions due to payload format issues",
+            affected_entity=target_gateway,
+            entity_type="gateway",
+            success_rate_modifier=0.6,  # 40% of transactions fail
+            latency_modifier=1.0,  # No latency impact
+            error_code_override=error_type,
+            duration_seconds=duration,
+            impact_probability=0.7
         )
     
     def inject_chaos(self, scenario_type: str, **kwargs) -> Optional[ChaosScenario]:

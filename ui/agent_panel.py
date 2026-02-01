@@ -329,3 +329,125 @@ def render_learning_insights(learnings: List[Dict], action_stats: Dict):
                 <span style="color: #E2E8F0; font-size: 0.9rem;">{learning.get('learning', '')}</span>
             </div>
             """, unsafe_allow_html=True)
+
+
+def render_payload_mutations(mutations: List[Dict], mutator_stats: Dict = None):
+    """Render the payload mutations panel - Self-Healing Data visualization."""
+    
+    st.subheader("🔧 Payload Polymorphism Engine")
+    st.caption("Self-healing data: fixing payloads to match gateway requirements")
+    
+    # Stats row
+    if mutator_stats:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric(
+                "Total Mutations",
+                mutator_stats.get("total_mutations", 0)
+            )
+        with col2:
+            st.metric(
+                "Successful",
+                mutator_stats.get("successful_mutations", 0),
+                delta=f"{mutator_stats.get('success_rate', 0):.0%}" if mutator_stats.get("total_mutations", 0) > 0 else None
+            )
+        with col3:
+            st.metric(
+                "Active Rules",
+                mutator_stats.get("active_rules", 0)
+            )
+        with col4:
+            st.metric(
+                "Pending",
+                mutator_stats.get("pending_outcomes", 0)
+            )
+    
+    st.divider()
+    
+    if not mutations:
+        st.info("🧬 No mutations yet. Inject 'Payload Error' chaos to see the engine in action!")
+        return
+    
+    st.markdown("**Recent Self-Healing Actions**")
+    
+    for mutation in mutations[:8]:
+        was_successful = mutation.get("was_successful")
+        
+        # Determine status color and icon
+        if was_successful is True:
+            status_icon = "✅"
+            status_color = "#10B981"
+            status_text = "Fixed"
+        elif was_successful is False:
+            status_icon = "❌"
+            status_color = "#EF4444"
+            status_text = "Failed"
+        else:
+            status_icon = "⏳"
+            status_color = "#F59E0B"
+            status_text = "Pending"
+        
+        # Gateway badge
+        gateway = mutation.get("gateway", "unknown")
+        error_code = mutation.get("error_code", "").replace("_", " ")
+        
+        # Before/after values
+        original = mutation.get("original_value", "")[:40]
+        if len(mutation.get("original_value", "")) > 40:
+            original += "..."
+        mutated = mutation.get("mutated_value", "")[:40]
+        if len(mutation.get("mutated_value", "")) > 40:
+            mutated += "..."
+        
+        field = mutation.get("field_name", "").replace("_", " ").title()
+        mutation_type = mutation.get("mutation_type", "").replace("_", " ").title()
+        
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid {status_color};
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.25rem;">{status_icon}</span>
+                    <span style="
+                        background: #6366F122;
+                        color: #818CF8;
+                        padding: 0.2rem 0.6rem;
+                        border-radius: 0.5rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                    ">{gateway.upper()}</span>
+                    <span style="color: #94A3B8; font-size: 0.8rem;">{error_code}</span>
+                </div>
+                <span style="
+                    background: {status_color}22;
+                    color: {status_color};
+                    padding: 0.2rem 0.6rem;
+                    border-radius: 0.5rem;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                ">{status_text}</span>
+            </div>
+            <div style="
+                background: #0F172A;
+                border-radius: 0.5rem;
+                padding: 0.75rem;
+                font-family: monospace;
+                font-size: 0.85rem;
+            ">
+                <div style="color: #94A3B8; margin-bottom: 0.25rem; font-size: 0.75rem;">
+                    {field} → {mutation_type}
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: #EF4444; text-decoration: line-through;">{original}</span>
+                    <span style="color: #6B7280;">→</span>
+                    <span style="color: #10B981;">{mutated}</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
