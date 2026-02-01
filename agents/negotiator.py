@@ -343,14 +343,47 @@ class NegotiationEngine:
         )
     
     def get_negotiation_summary(self, record: NegotiationRecord) -> str:
-        """Generate a summary of a negotiation."""
+        """Generate a summary of a negotiation using LLM."""
+        # Try LLM-enhanced summary first
+        try:
+            from core.llm_client import get_gemini_client
+            client = get_gemini_client()
+            if client:
+                context = {
+                    "decision": record.final_decision or "pending",
+                    "rounds": len(record.rounds),
+                    "optimizer_reasoning": record.optimizer_reasoning or "Not available",
+                    "risk_officer_reasoning": record.risk_officer_reasoning or "Not available",
+                    "compromise_details": record.compromise_details or "None",
+                }
+                llm_summary = client.generate_reasoning(context, "negotiator")
+                if llm_summary:
+                    # Prepend with structured header
+                    action_type = record.original_action.action_type.value if record.original_action else "N/A"
+                    consensus = "Reached" if record.consensus_reached else "Not reached"
+                    header = (
+                        f"## Negotiation Summary\n\n"
+                        f"**Original Action**: {action_type}\n"
+                        f"**Rounds**: {len(record.rounds)}\n"
+                        f"**Consensus**: {consensus}\n"
+                        f"**Final Decision**: {(record.final_decision or 'pending').upper()}\n\n"
+                    )
+                    return header + llm_summary
+        except Exception as e:
+            print(f"[NegotiationEngine] LLM summary failed: {e}")
+        
+        # Fallback to template-based summary
+        return self._template_summary(record)
+    
+    def _template_summary(self, record: NegotiationRecord) -> str:
+        """Generate template-based negotiation summary (fallback)."""
         lines = [
             f"## Negotiation Summary",
             f"",
             f"**Original Action**: {record.original_action.action_type.value if record.original_action else 'N/A'}",
             f"**Rounds**: {len(record.rounds)}",
-            f"**Consensus**: {'✅ Reached' if record.consensus_reached else '❌ Not reached'}",
-            f"**Final Decision**: {record.final_decision.upper()}",
+            f"**Consensus**: {'Reached' if record.consensus_reached else 'Not reached'}",
+            f"**Final Decision**: {(record.final_decision or 'pending').upper()}",
             f"",
             f"### Negotiation Rounds:",
         ]

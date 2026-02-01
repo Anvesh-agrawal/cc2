@@ -460,7 +460,37 @@ class RiskOfficerAgent:
         }
     
     def get_reasoning(self, assessment: RiskAssessment) -> str:
-        """Generate detailed reasoning for a risk assessment."""
+        """Generate detailed reasoning for a risk assessment using LLM."""
+        # Try LLM-enhanced reasoning first
+        try:
+            from core.llm_client import get_gemini_client
+            client = get_gemini_client()
+            if client:
+                context = {
+                    "action_id": assessment.action_id,
+                    "verdict": assessment.verdict,
+                    "overall_risk": assessment.overall_risk,
+                    "risk_factors": [f"{f['factor']}: {f['description']}" for f in assessment.risk_factors],
+                    "mitigations": assessment.mitigations,
+                    "conditions": assessment.conditions,
+                }
+                llm_reasoning = client.generate_reasoning(context, "risk_officer")
+                if llm_reasoning:
+                    # Prepend with structured header
+                    header = (
+                        f"## Risk Assessment for Action {assessment.action_id}\n\n"
+                        f"**Verdict**: {assessment.verdict.upper()}\n"
+                        f"**Overall Risk**: {assessment.overall_risk:.2%}\n\n"
+                    )
+                    return header + llm_reasoning
+        except Exception as e:
+            print(f"[RiskOfficerAgent] LLM reasoning failed: {e}")
+        
+        # Fallback to template-based reasoning
+        return self._template_reasoning(assessment)
+    
+    def _template_reasoning(self, assessment: RiskAssessment) -> str:
+        """Generate template-based reasoning (fallback)."""
         parts = [
             f"## Risk Assessment for Action {assessment.action_id}",
             "",

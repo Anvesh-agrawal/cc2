@@ -324,7 +324,34 @@ class OptimizerAgent:
         return recommendation
     
     def get_reasoning(self, action: ActionRecommendation) -> str:
-        """Generate human-readable reasoning for an action."""
+        """Generate human-readable reasoning for an action using LLM."""
+        # Try LLM-enhanced reasoning first
+        try:
+            from core.llm_client import get_gemini_client
+            client = get_gemini_client()
+            if client:
+                context = {
+                    "action_type": action.action_type.value,
+                    "description": action.description,
+                    "expected_improvement": action.expected_success_rate_delta,
+                    "risk_score": action.risk_score,
+                    "hypothesis_id": action.hypothesis_id,
+                    "success_weight": self.config.success_weight,
+                    "latency_weight": self.config.latency_weight,
+                    "cost_weight": self.config.cost_weight,
+                    "can_rollback": action.can_rollback,
+                }
+                llm_reasoning = client.generate_reasoning(context, "optimizer")
+                if llm_reasoning:
+                    return llm_reasoning
+        except Exception as e:
+            print(f"[OptimizerAgent] LLM reasoning failed: {e}")
+        
+        # Fallback to template-based reasoning
+        return self._template_reasoning(action)
+    
+    def _template_reasoning(self, action: ActionRecommendation) -> str:
+        """Generate template-based reasoning (fallback)."""
         reasoning_parts = [
             f"I'm proposing a {action.action_type.value} action because:",
             f"",
