@@ -1,5 +1,5 @@
 """
-Antigravity Models
+Vanta Models
 =================
 Data models for transactions, patterns, and hypotheses.
 """

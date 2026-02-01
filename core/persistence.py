@@ -15,7 +15,7 @@ from dataclasses import asdict
 class StatePersistence:
     """Persist agent state to SQLite for learning continuity."""
     
-    def __init__(self, db_path: str = "antigravity_state.db"):
+    def __init__(self, db_path: str = "vanta_state.db"):
         self.db_path = db_path
         self._init_db()
     

@@ -1,5 +1,5 @@
 """
-Antigravity UI
+Vanta UI
 ==============
 Streamlit UI components for the payment agent system.
 """

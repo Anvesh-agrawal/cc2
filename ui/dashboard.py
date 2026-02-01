@@ -61,7 +61,7 @@ def render_sidebar(
         </style>
         <div class="logo-container">
             <span class="logo-icon">⚡</span>
-            <h1 class="logo-text">Antigravity</h1>
+            <h1 class="logo-text">Vanta</h1>
             <p class="logo-subtitle">Agentic Payment Operations</p>
         </div>
         """, unsafe_allow_html=True)

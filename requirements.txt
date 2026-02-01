@@ -1,4 +1,4 @@
-# Antigravity - Agentic AI for Smart Payment Operations
+# Vanta - Agentic AI for Smart Payment Operations
 # Requirements
 
 # Core

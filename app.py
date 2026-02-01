@@ -1,5 +1,5 @@
 """
-Antigravity: Agentic AI for Smart Payment Operations
+Vanta: Agentic AI for Smart Payment Operations
 =====================================================
 
 A real-time payment operations manager that observes payment behavior,
@@ -18,7 +18,7 @@ from collections import deque
 
 # Configure page
 st.set_page_config(
-    page_title="Antigravity | Agentic Payments",
+    page_title="Vanta | Agentic Payments",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"

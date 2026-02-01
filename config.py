@@ -1,5 +1,5 @@
 """
-Antigravity Configuration
+Vanta Configuration
 ========================
 Central configuration for the Agentic AI Payment Operations system.
 """

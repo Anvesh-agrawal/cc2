@@ -1,5 +1,5 @@
 """
-Antigravity Core
+Vanta Core
 ================
 Core engine components for the payment agent system.
 """

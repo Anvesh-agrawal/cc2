@@ -1,4 +1,4 @@
-# ⚡ Antigravity
+# ⚡ Vanta
 
 > **Agentic AI for Smart Payment Operations**
 
@@ -12,7 +12,7 @@ A real-time payment operations manager that observes payment behavior, reasons a
 
 ## 🎯 Problem Statement
 
-Payment failures at scale cause lost revenue, abandoned carts, and broken trust. Traditional systems discover issues after dashboards spike or merchants complain. **Antigravity** is a proactive agentic system that:
+Payment failures at scale cause lost revenue, abandoned carts, and broken trust. Traditional systems discover issues after dashboards spike or merchants complain. **Vanta** is a proactive agentic system that:
 
 - **Observes** payment signals in real-time
 - **Reasons** about emerging failure patterns
@@ -26,7 +26,7 @@ Payment failures at scale cause lost revenue, abandoned carts, and broken trust.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         ANTIGRAVITY SYSTEM                          │
+│                           VANTA SYSTEM                              │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────────────┐ │
@@ -83,7 +83,7 @@ Open your browser to `http://localhost:8501`
 ## 📁 Project Structure
 
 ```
-antigravity/
+vanta/
 ├── app.py                    # Main Streamlit application
 ├── config.py                 # Configuration & constants
 ├── requirements.txt          # Python dependencies
@@ -216,4 +216,4 @@ MIT License - See LICENSE file for details
 
 Built for the Agentic AI for Smart Payment Operations challenge.
 
-**Team Antigravity** ⚡
+**Team Vanta** ⚡

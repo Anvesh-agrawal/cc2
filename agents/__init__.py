@@ -1,5 +1,5 @@
 """
-Antigravity Agents
+Vanta Agents
 ==================
 Dual-agent architecture for payment optimization.
 """
