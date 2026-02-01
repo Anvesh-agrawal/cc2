@@ -75,29 +75,29 @@ def _render_agent_card(name: str, icon: str, color: str, stats: Dict):
     """Render an agent status card."""
     
     stats_html = "".join([
-        f'<div style="display: flex; justify-content: space-between; margin: 0.25rem 0;">'
-        f'<span style="color: #94A3B8;">{k}</span>'
-        f'<span style="color: #E2E8F0; font-weight: 600;">{v}</span>'
+        f'<div style="display: flex; justify-content: space-between; margin: 4px 0;">'
+        f'<span style="color: #8b949e;">{k}</span>'
+        f'<span style="color: #c9d1d9; font-weight: 600;">{v}</span>'
         f'</div>'
         for k, v in stats.items()
     ])
     
     st.markdown(f"""
     <div style="
-        background: rgba(30, 41, 59, 0.7);
-        border-radius: 0.75rem;
-        padding: 0.875rem;
+        background-color: #161b22;
+        border-radius: 6px;
+        padding: 12px;
         border-left: 3px solid {color};
     ">
-        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+        <div style="display: flex; align-items: center; margin-bottom: 8px;">
             <span style="
                 width: 8px; 
                 height: 8px; 
                 background: {color}; 
                 border-radius: 50%; 
-                margin-right: 0.5rem;
+                margin-right: 8px;
             "></span>
-            <span style="font-size: 0.95rem; font-weight: 600; color: {color};">{name}</span>
+            <span style="font-size: 14px; font-weight: 600; color: {color};">{name}</span>
         </div>
         {stats_html}
     </div>
@@ -119,24 +119,24 @@ def _render_approval_card(
     with st.container():
         st.markdown(f"""
         <div style="
-            background: #1E293B;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin: 0.5rem 0;
+            background-color: #161b22;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
             border-left: 4px solid {risk_color};
         ">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 600; font-size: 1.1rem;">{action_type}</span>
+                <span style="font-weight: 600; font-size: 16px; color: #c9d1d9;">{action_type}</span>
                 <span style="
-                    background: {risk_color}22;
+                    background-color: {risk_color}22;
                     color: {risk_color};
-                    padding: 0.25rem 0.75rem;
-                    border-radius: 1rem;
-                    font-size: 0.8rem;
+                    padding: 4px 12px;
+                    border-radius: 12px;
+                    font-size: 12px;
                     font-weight: 600;
                 ">Risk: {risk_score:.0%}</span>
             </div>
-            <p style="color: #94A3B8; margin: 0.5rem 0;">
+            <p style="color: #8b949e; margin: 8px 0;">
                 {approval.get("description", "")}
             </p>
         </div>
@@ -182,7 +182,7 @@ def _render_negotiation_card(negotiation: Dict):
     color = decision_colors.get(decision, "#6B7280")
     
     with st.expander(
-        f"{'✅' if consensus else '❌'} {negotiation.get('original_action_type', 'Unknown').replace('_', ' ').title()} → {decision.upper()}",
+        f"{'[OK]' if consensus else '[FAIL]'} {negotiation.get('original_action_type', 'Unknown').replace('_', ' ').title()} → {decision.upper()}",
         expanded=False
     ):
         col1, col2, col3 = st.columns(3)
@@ -220,23 +220,23 @@ def render_agent_reasoning(
     
     st.markdown(f"""
     <div style="
-        background: rgba(30, 41, 59, 0.6);
-        border-radius: 0.5rem;
-        padding: 0.75rem;
+        background-color: #161b22;
+        border-radius: 6px;
+        padding: 12px;
         border-left: 3px solid {color};
-        margin: 0.35rem 0;
+        margin: 6px 0;
     ">
-        <div style="display: flex; align-items: center; margin-bottom: 0.35rem;">
+        <div style="display: flex; align-items: center; margin-bottom: 6px;">
             <span style="
                 width: 6px; 
                 height: 6px; 
                 background: {color}; 
                 border-radius: 50%; 
-                margin-right: 0.5rem;
+                margin-right: 8px;
             "></span>
             <span style="font-weight: 600; color: {color};">{agent_name}</span>
         </div>
-        <div style="color: #E2E8F0; font-size: 0.85rem; white-space: pre-wrap;">
+        <div style="color: #c9d1d9; font-size: 13px; white-space: pre-wrap;">
             {reasoning}
         </div>
     </div>
@@ -326,7 +326,7 @@ def render_learning_insights(learnings: List[Dict], action_stats: Dict):
             event_type = learning.get("event_type", "")
             is_positive = "positive" in event_type or "validated" in event_type
             
-            icon = "✅" if is_positive else "❌" if "negative" in event_type else "ℹ️"
+            icon = "[OK]" if is_positive else "[FAIL]" if "negative" in event_type else "[i]"
             color = "#10B981" if is_positive else "#EF4444" if "negative" in event_type else "#6B7280"
             
             st.markdown(f"""

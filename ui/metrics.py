@@ -494,7 +494,7 @@ def render_learning_trajectory(historical_data: List[Dict], height: int = 300):
             x=1,
             font=dict(color="#94A3B8")
         ),
-        title=dict(text="📈 Agent Learning Trajectory", font=dict(color="#E2E8F0", size=14))
+        title=dict(text="Agent Learning Trajectory", font=dict(color="#E2E8F0", size=14))
     )
     
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -507,7 +507,7 @@ def render_provider_leaderboard(route_data: List[Dict]):
         st.caption("No provider data available")
         return
     
-    st.subheader("🏆 Provider Leaderboard")
+    st.subheader("Provider Leaderboard")
     
     # Aggregate by gateway
     from collections import defaultdict
@@ -571,7 +571,7 @@ def render_beta_distributions(route_data: List[Dict], height: int = 300):
         st.caption("No route data for Beta visualization")
         return
     
-    st.subheader("🎲 Bayesian Confidence (Thompson Sampling)")
+    st.subheader("Bayesian Confidence (Thompson Sampling)")
     st.caption("Narrower curves = higher confidence. Agent learns which routes work best.")
     
     # Filter to top 5 by transaction count

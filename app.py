@@ -63,6 +63,38 @@ from ui.metrics import (
 )
 
 
+import base64
+import os
+
+def get_background_image_css():
+    """Load background image and return CSS with embedded base64."""
+    bg_path = os.path.join(os.path.dirname(__file__), "static", "background.jpg")
+    if os.path.exists(bg_path):
+        with open(bg_path, "rb") as f:
+            bg_data = base64.b64encode(f.read()).decode()
+        return f"""
+        .stApp {{
+            background-image: url('data:image/jpeg;base64,{bg_data}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }}
+        
+        .stApp::before {{
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 17, 23, 0.85);
+            pointer-events: none;
+            z-index: 0;
+        }}
+        """
+    return ".stApp { background-color: #0d1117; }"
+
 # =============================================================================
 # CUSTOM STYLES
 # =============================================================================
@@ -70,7 +102,7 @@ from ui.metrics import (
 st.markdown("""
 <style>
     /* =================================================================
-       DESIGN TOKENS - Consistent spacing and colors
+       DESIGN TOKENS - GitHub Primer Dark Mode
        ================================================================= */
     :root {
         /* Spacing scale (8px base) */
@@ -82,275 +114,199 @@ st.markdown("""
         --space-6: 1.5rem;
         --space-8: 2rem;
         
-        /* Colors */
-        --bg-primary: #0F172A;
-        --bg-secondary: #1E293B;
-        --bg-tertiary: #334155;
-        --border-subtle: rgba(148, 163, 184, 0.1);
-        --border-default: rgba(148, 163, 184, 0.2);
+        /* Background colors (GitHub Dark) */
+        --bg-primary: #0d1117;
+        --bg-secondary: #161b22;
+        --bg-tertiary: #21262d;
+        --bg-overlay: #30363d;
         
-        /* Accent colors */
-        --accent-primary: #8B5CF6;
-        --accent-secondary: #6366F1;
-        --accent-glow: rgba(139, 92, 246, 0.4);
+        /* Border colors */
+        --border-default: #30363d;
+        --border-muted: #21262d;
+        
+        /* Accent colors (GitHub Blue) */
+        --accent-primary: #58a6ff;
+        --accent-fg: #58a6ff;
+        --accent-emphasis: #1f6feb;
         
         /* Semantic colors */
-        --success: #10B981;
-        --warning: #F59E0B;
-        --error: #EF4444;
-        --info: #3B82F6;
+        --success: #3fb950;
+        --success-emphasis: #238636;
+        --warning: #d29922;
+        --error: #f85149;
+        --error-emphasis: #da3633;
+        --info: #58a6ff;
         
         /* Text */
-        --text-primary: #F1F5F9;
-        --text-secondary: #94A3B8;
-        --text-muted: #64748B;
+        --text-primary: #c9d1d9;
+        --text-secondary: #8b949e;
+        --text-muted: #6e7681;
+        --text-on-emphasis: #ffffff;
         
         /* Animation */
-        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-        --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-        --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-        --duration-fast: 120ms;
-        --duration-normal: 180ms;
-        --duration-slow: 250ms;
+        --duration-fast: 80ms;
+        --duration-normal: 150ms;
     }
     
     /* =================================================================
-       KEYFRAME ANIMATIONS
+       BASE STYLES - will be overridden by dynamic injection below
        ================================================================= */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
     
-    @keyframes slideUp {
-        from { 
-            opacity: 0; 
-            transform: translateY(20px); 
-        }
-        to { 
-            opacity: 1; 
-            transform: translateY(0); 
-        }
-    }
-    
-    @keyframes slideInRight {
-        from { 
-            opacity: 0; 
-            transform: translateX(30px); 
-        }
-        to { 
-            opacity: 1; 
-            transform: translateX(0); 
-        }
-    }
-    
-    /* Removed: @keyframes pulse - continuous animation causes visual noise */
-    
-    /* Removed: @keyframes shimmer - decorative loading effect */
-    
-    /* Removed: @keyframes glow - continuous animation causes performance issues */
-    
-    @keyframes scaleIn {
-        from { 
-            opacity: 0; 
-            transform: scale(0.95); 
-        }
-        to { 
-            opacity: 1; 
-            transform: scale(1); 
-        }
-    }
-    
-    /* Removed: @keyframes float - continuous animation is distracting */
-    
-    @keyframes countUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* =================================================================
-       BASE STYLES
-       ================================================================= */
-    .stApp {
-        background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-    }
-    
-    /* Sidebar with glassmorphism */
+    /* Sidebar - Semi-transparent */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-right: 1px solid var(--border-subtle);
-        animation: fadeIn var(--duration-slow) var(--ease-out);
+        background-color: rgba(22, 27, 34, 0.1);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(48, 54, 61, 0.5);
     }
     
     /* =================================================================
-       METRIC CARDS - Animated entrance
+       METRIC CARDS - Clean, minimal
        ================================================================= */
     .stMetric {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background-color: var(--bg-secondary);
         padding: var(--space-4);
-        border-radius: var(--space-3);
-        border: 1px solid var(--border-subtle);
-        animation: slideUp var(--duration-normal) var(--ease-out);
-        transition: all var(--duration-fast) var(--ease-out);
+        border-radius: 6px;
+        border: 1px solid var(--border-default);
+        transition: border-color var(--duration-fast) ease;
     }
     
     .stMetric:hover {
-        border-color: rgba(139, 92, 246, 0.3);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        border-color: var(--border-muted);
     }
     
     /* =================================================================
-       BUTTONS - Interactive with feedback
+       BUTTONS - GitHub style
        ================================================================= */
     .stButton > button {
-        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-        color: white;
-        border: none;
-        border-radius: var(--space-2);
-        padding: var(--space-2) var(--space-4);
-        font-weight: 600;
-        transition: all var(--duration-fast) var(--ease-out);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stButton > button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left var(--duration-slow) var(--ease-out);
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-default);
+        border-radius: 6px;
+        padding: 5px 16px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: background-color var(--duration-fast) ease;
     }
     
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        background-color: var(--bg-overlay);
+        border-color: var(--text-muted);
     }
     
-    .stButton > button:hover::before {
-        left: 100%;
+    /* Primary button style */
+    .stButton > button[kind="primary"] {
+        background-color: var(--success-emphasis);
+        color: var(--text-on-emphasis);
+        border: 1px solid rgba(240, 246, 252, 0.1);
     }
     
-    .stButton > button:active {
-        transform: translateY(0) scale(0.98);
+    .stButton > button[kind="primary"]:hover {
+        background-color: #2ea043;
     }
     
     /* =================================================================
-       TABS - Smooth transitions
+       TABS - Simple underline style
        ================================================================= */
     .stTabs [data-baseweb="tab-list"] {
-        gap: var(--space-2);
-        background: rgba(30, 41, 59, 0.6);
-        backdrop-filter: blur(10px);
-        padding: var(--space-2);
-        border-radius: var(--space-3);
-        border: 1px solid var(--border-subtle);
+        gap: 0;
+        background: transparent;
+        border-bottom: 1px solid var(--border-default);
+        padding: 0;
     }
     
     .stTabs [data-baseweb="tab"] {
         background: transparent;
         color: var(--text-secondary);
-        border-radius: var(--space-2);
+        border-radius: 0;
+        border-bottom: 2px solid transparent;
         padding: var(--space-2) var(--space-4);
-        transition: all var(--duration-fast) var(--ease-out);
+        margin-bottom: -1px;
+        transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
     }
     
     .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(139, 92, 246, 0.1);
         color: var(--text-primary);
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
-        color: white !important;
+        background: transparent !important;
+        color: var(--text-primary) !important;
+        border-bottom-color: #f78166 !important;
+        font-weight: 600;
     }
     
     /* =================================================================
-       EXPANDERS - Smooth open/close
+       EXPANDERS - Clean borders
        ================================================================= */
     .streamlit-expanderHeader {
-        background: rgba(30, 41, 59, 0.6);
-        border-radius: var(--space-2);
-        border: 1px solid var(--border-subtle);
-        transition: all var(--duration-fast) var(--ease-out);
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-default);
+        border-radius: 6px;
+        transition: background-color var(--duration-fast) ease;
     }
     
     .streamlit-expanderHeader:hover {
-        background: rgba(30, 41, 59, 0.8);
-        border-color: var(--border-default);
+        background-color: var(--bg-tertiary);
     }
     
     /* =================================================================
-       INPUTS - Enhanced focus states
+       INPUTS - GitHub form style
        ================================================================= */
     .stSelectbox > div > div,
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input {
-        background: rgba(30, 41, 59, 0.6) !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: var(--space-2) !important;
-        transition: all var(--duration-fast) var(--ease-out) !important;
-    }
-    
-    .stSelectbox > div > div:hover,
-    .stTextInput > div > div > input:hover,
-    .stNumberInput > div > div > input:hover {
-        border-color: var(--border-default) !important;
+        background-color: var(--bg-primary) !important;
+        border: 1px solid var(--border-default) !important;
+        border-radius: 6px !important;
+        color: var(--text-primary) !important;
+        transition: border-color var(--duration-fast) ease !important;
     }
     
     .stSelectbox > div > div:focus-within,
     .stTextInput > div > div > input:focus,
     .stNumberInput > div > div > input:focus {
         border-color: var(--accent-primary) !important;
-        box-shadow: 0 0 0 3px var(--accent-glow) !important;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3) !important;
+        outline: none !important;
     }
     
     /* =================================================================
-       TOGGLE - Smooth switch
+       TOGGLE
        ================================================================= */
     .stToggle > label > div {
-        transition: all var(--duration-fast) var(--ease-out) !important;
+        transition: background-color var(--duration-fast) ease !important;
     }
     
     /* =================================================================
-       SLIDER - Enhanced track
+       SLIDER
        ================================================================= */
     .stSlider > div > div > div {
-        background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)) !important;
+        background-color: var(--accent-emphasis) !important;
     }
     
     /* =================================================================
        DIVIDERS
        ================================================================= */
     hr {
-        border-color: var(--border-subtle);
-        opacity: 0.5;
+        border-color: var(--border-default);
     }
     
     /* =================================================================
-       TYPOGRAPHY - Hierarchy
+       TYPOGRAPHY
        ================================================================= */
     h1, h2, h3, h4, h5, h6 {
         color: var(--text-primary) !important;
-        animation: fadeIn var(--duration-normal) var(--ease-out);
+        font-weight: 600;
     }
     
     h1 { 
+        font-size: 24px;
         letter-spacing: -0.02em; 
-        font-weight: 700;
     }
     
     h2, h3 { 
-        letter-spacing: -0.01em;
-        font-weight: 600;
+        font-size: 20px;
     }
     
     p, span, label {
@@ -358,7 +314,7 @@ st.markdown("""
     }
     
     /* =================================================================
-       SCROLLBAR - Styled
+       SCROLLBAR - Minimal
        ================================================================= */
     ::-webkit-scrollbar {
         width: 8px;
@@ -370,49 +326,12 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-thumb {
-        background: var(--bg-tertiary);
+        background: var(--bg-overlay);
         border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
         background: var(--text-muted);
-    }
-    
-    /* =================================================================
-       CUSTOM COMPONENT ANIMATIONS
-       ================================================================= */
-    .metric-card {
-        transition: all var(--duration-fast) var(--ease-out);
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    }
-    
-    /* Removed entrance animations from frequently-updating elements */
-    .transaction-item {
-        transition: all var(--duration-fast) var(--ease-out);
-    }
-    
-    .pattern-alert {
-        transition: all var(--duration-fast) var(--ease-out);
-    }
-    
-    .action-card {
-        transition: all var(--duration-fast) var(--ease-out);
-    }
-    
-    .action-card:hover {
-        transform: translateX(2px);
-    }
-    
-    /* Status indicator - simple colored dot, no animation */
-    .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        display: inline-block;
     }
     
     /* =================================================================
@@ -423,6 +342,9 @@ st.markdown("""
     header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
+
+# Inject dynamic background image
+st.markdown(f"<style>{get_background_image_css()}</style>", unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -777,22 +699,22 @@ def on_inject_chaos(chaos_type: str):
 def on_clear_chaos():
     """Clear all chaos scenarios."""
     st.session_state.simulator.clear_chaos()
-    st.toast("✅ Chaos cleared", icon="🗑️")
+    st.toast("Chaos cleared")
 
 
 def on_approve_action(action_id: str):
     """Approve a pending action."""
     success, message, record = st.session_state.executor.approve_action(action_id)
     if success:
-        st.toast(f"✅ Action approved: {message}", icon="✅")
+        st.toast(f"Action approved: {message}")
     else:
-        st.toast(f"❌ Approval failed: {message}", icon="❌")
+        st.toast(f"Approval failed: {message}")
 
 
 def on_reject_action(action_id: str):
     """Reject a pending action."""
     st.session_state.executor.reject_action(action_id, "User rejected")
-    st.toast("❌ Action rejected", icon="❌")
+    st.toast("Action rejected")
 
 
 def on_chaos_level_change(level: float):
@@ -804,9 +726,9 @@ def on_agent_toggle(enabled: bool):
     """Toggle agent ON/OFF."""
     st.session_state.agent_enabled = enabled
     if enabled:
-        st.toast("🤖 Agent ENABLED - using smart EV-optimized routing", icon="✅")
+        st.toast("Agent ENABLED - using smart EV-optimized routing")
     else:
-        st.toast("⚠️ Agent DISABLED - using naive routing", icon="⚠️")
+        st.toast("Agent DISABLED - using naive routing")
 
 
 # =============================================================================

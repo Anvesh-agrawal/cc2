@@ -60,7 +60,7 @@ def render_sidebar(
             }
         </style>
         <div class="logo-container">
-            <span class="logo-icon">⚡</span>
+            <span class="logo-icon" style="font-weight: 700; color: #d29922;">V</span>
             <h1 class="logo-text">Vanta</h1>
             <p class="logo-subtitle">Agentic Payment Operations</p>
         </div>
@@ -74,7 +74,7 @@ def render_sidebar(
         col1, col2 = st.columns(2)
         with col1:
             if st.button(
-                "▶️ Start" if not is_running else "⏸️ Pause",
+                "Start" if not is_running else "Pause",
                 use_container_width=True,
                 type="primary" if not is_running else "secondary"
             ):
@@ -82,7 +82,7 @@ def render_sidebar(
                     on_toggle_simulation()
         
         with col2:
-            if st.button("🗑️ Clear", use_container_width=True):
+            if st.button("Clear", use_container_width=True):
                 if on_clear_chaos:
                     on_clear_chaos()
         
@@ -109,7 +109,7 @@ def render_sidebar(
         
         # Chaos Level Slider
         st.markdown("---")
-        st.subheader("🎚️ Chaos Level")
+        st.subheader("Chaos Level")
         chaos_level = st.slider(
             "Intensity",
             min_value=0,
@@ -137,33 +137,35 @@ def render_sidebar(
         margin_diff = agent_margin - naive_margin
         
         if agent_on:
-            # Agent is ON - show what we're earning
+            # Agent is ON - show what we're earning (GitHub-style success box)
             st.markdown(f"""
             <div style="
-                background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-                border-radius: 0.75rem;
-                padding: 1rem;
-                margin: 0.5rem 0;
+                background-color: #238636;
+                border: 1px solid #3fb950;
+                border-radius: 6px;
+                padding: 12px;
+                margin: 8px 0;
                 text-align: center;
             ">
-                <p style="color: #D1FAE5; font-size: 0.8rem; margin: 0;">Smart Routing Active</p>
-                <p style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0;">₹{agent_margin:,.2f}</p>
-                <p style="color: #A7F3D0; font-size: 0.75rem; margin: 0;">+Extra vs naive: ₹{margin_diff:,.2f}</p>
+                <p style="color: #aff5b4; font-size: 12px; margin: 0;">Smart Routing Active</p>
+                <p style="color: #ffffff; font-size: 20px; font-weight: 600; margin: 4px 0;">₹{agent_margin:,.2f}</p>
+                <p style="color: #7ee787; font-size: 12px; margin: 0;">+Extra vs naive: ₹{margin_diff:,.2f}</p>
             </div>
             """, unsafe_allow_html=True)
         else:
-            # Agent is OFF - show what we're losing
+            # Agent is OFF - show what we're losing (GitHub-style danger box)
             st.markdown(f"""
             <div style="
-                background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-                border-radius: 0.75rem;
-                padding: 1rem;
-                margin: 0.5rem 0;
+                background-color: #da3633;
+                border: 1px solid #f85149;
+                border-radius: 6px;
+                padding: 12px;
+                margin: 8px 0;
                 text-align: center;
             ">
-                <p style="color: #FEE2E2; font-size: 0.8rem; margin: 0;">Naive Routing (No Agent)</p>
-                <p style="color: white; font-size: 1.5rem; font-weight: 700; margin: 0.25rem 0;">₹{naive_margin:,.2f}</p>
-                <p style="color: #FECACA; font-size: 0.75rem; margin: 0;">Losing: ₹{margin_diff:,.2f}</p>
+                <p style="color: #ffc8c6; font-size: 12px; margin: 0;">Naive Routing (No Agent)</p>
+                <p style="color: #ffffff; font-size: 20px; font-weight: 600; margin: 4px 0;">₹{naive_margin:,.2f}</p>
+                <p style="color: #ffaba8; font-size: 12px; margin: 0;">Losing: ₹{margin_diff:,.2f}</p>
             </div>
             """, unsafe_allow_html=True)
             
