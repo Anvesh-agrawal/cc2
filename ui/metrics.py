@@ -402,7 +402,7 @@ def render_charts(
 ):
     """Render all charts in a grid layout."""
     
-    tabs = st.tabs(["📈 Trends", "🏦 Banks", "💳 Methods", "🗺️ Routes", "🧠 Learning"])
+    tabs = st.tabs(["Trends", "Banks", "Methods", "Routes", "Learning"])
     
     with tabs[0]:
         render_success_rate_chart(historical_data)

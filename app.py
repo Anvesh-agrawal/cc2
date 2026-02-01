@@ -109,9 +109,9 @@ st.markdown("""
         --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
         --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-        --duration-fast: 150ms;
-        --duration-normal: 200ms;
-        --duration-slow: 300ms;
+        --duration-fast: 120ms;
+        --duration-normal: 180ms;
+        --duration-slow: 250ms;
     }
     
     /* =================================================================
@@ -144,20 +144,11 @@ st.markdown("""
         }
     }
     
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
+    /* Removed: @keyframes pulse - continuous animation causes visual noise */
     
-    @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
+    /* Removed: @keyframes shimmer - decorative loading effect */
     
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-        50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
-    }
+    /* Removed: @keyframes glow - continuous animation causes performance issues */
     
     @keyframes scaleIn {
         from { 
@@ -170,10 +161,7 @@ st.markdown("""
         }
     }
     
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
-    }
+    /* Removed: @keyframes float - continuous animation is distracting */
     
     @keyframes countUp {
         from { opacity: 0; transform: translateY(10px); }
@@ -211,9 +199,9 @@ st.markdown("""
     }
     
     .stMetric:hover {
-        border-color: var(--accent-glow);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-color: rgba(139, 92, 246, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     }
     
     /* =================================================================
@@ -243,8 +231,8 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px) scale(1.02);
-        box-shadow: 0 8px 25px var(--accent-glow);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
     }
     
     .stButton > button:hover::before {
@@ -283,8 +271,6 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
         color: white !important;
-        box-shadow: 0 4px 15px var(--accent-glow);
-        animation: scaleIn var(--duration-fast) var(--ease-out);
     }
     
     /* =================================================================
@@ -396,57 +382,37 @@ st.markdown("""
        CUSTOM COMPONENT ANIMATIONS
        ================================================================= */
     .metric-card {
-        animation: slideUp var(--duration-normal) var(--ease-out);
         transition: all var(--duration-fast) var(--ease-out);
     }
     
     .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
     }
     
+    /* Removed entrance animations from frequently-updating elements */
     .transaction-item {
-        animation: slideInRight var(--duration-slow) var(--ease-out);
+        transition: all var(--duration-fast) var(--ease-out);
     }
     
     .pattern-alert {
-        animation: slideUp var(--duration-normal) var(--ease-out);
+        transition: all var(--duration-fast) var(--ease-out);
     }
     
     .action-card {
-        animation: scaleIn var(--duration-normal) var(--ease-out);
         transition: all var(--duration-fast) var(--ease-out);
     }
     
     .action-card:hover {
-        transform: scale(1.01);
+        transform: translateX(2px);
     }
     
-    /* Pulsing status indicator */
-    .status-pulse {
-        animation: pulse 2s infinite;
-    }
-    
-    /* Floating animation for icons */
-    .float-icon {
-        animation: float 3s ease-in-out infinite;
-    }
-    
-    /* Shimmer loading effect */
-    .shimmer {
-        background: linear-gradient(
-            90deg,
-            rgba(30, 41, 59, 0.4) 0%,
-            rgba(51, 65, 85, 0.6) 50%,
-            rgba(30, 41, 59, 0.4) 100%
-        );
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
-    }
-    
-    /* Glowing border effect */
-    .glow-border {
-        animation: glow 2s infinite;
+    /* Status indicator - simple colored dot, no animation */
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
     }
     
     /* =================================================================
@@ -882,10 +848,10 @@ def main():
     
     # Main content tabs
     tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Dashboard",
-        "🤖 Agent Center",
-        "📈 Analytics",
-        "🧠 Learning"
+        "Dashboard",
+        "Agent Center",
+        "Analytics",
+        "Learning"
     ])
     
     with tab1:

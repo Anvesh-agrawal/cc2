@@ -19,7 +19,7 @@ def render_agent_panel(
 ):
     """Render the agent decision panel."""
     
-    st.subheader("🤖 Agent Decision Center")
+    st.subheader("Agent Decision Center")
     
     # Agent health cards
     col1, col2, col3 = st.columns(3)
@@ -27,7 +27,7 @@ def render_agent_panel(
     with col1:
         _render_agent_card(
             name="Optimizer",
-            icon="🚀",
+            icon="",
             color="#10B981",
             stats={
                 "Decisions": optimizer_stats.get("decisions_made", 0),
@@ -38,7 +38,7 @@ def render_agent_panel(
     with col2:
         _render_agent_card(
             name="Risk Officer",
-            icon="🛡️",
+            icon="",
             color="#F59E0B",
             stats={
                 "Vetoes": risk_officer_stats.get("total_vetoes", 0),
@@ -50,7 +50,7 @@ def render_agent_panel(
     with col3:
         _render_agent_card(
             name="Negotiator",
-            icon="🤝",
+            icon="",
             color="#8B5CF6",
             stats={
                 "Negotiations": negotiation_stats.get("total_negotiations", 0),
@@ -63,12 +63,12 @@ def render_agent_panel(
     
     # Pending approvals
     if pending_approvals:
-        st.subheader("⏳ Pending Approvals")
+        st.subheader("Pending Approvals")
         
         for approval in pending_approvals:
             _render_approval_card(approval, on_approve, on_reject)
     else:
-        st.info("✅ No pending approvals")
+        st.info("No pending approvals")
 
 
 def _render_agent_card(name: str, icon: str, color: str, stats: Dict):
@@ -84,15 +84,20 @@ def _render_agent_card(name: str, icon: str, color: str, stats: Dict):
     
     st.markdown(f"""
     <div style="
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        border-radius: 1rem;
-        padding: 1rem;
-        border: 1px solid {color}44;
-        border-top: 3px solid {color};
+        background: rgba(30, 41, 59, 0.7);
+        border-radius: 0.75rem;
+        padding: 0.875rem;
+        border-left: 3px solid {color};
     ">
-        <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-            <span style="font-size: 1.5rem; margin-right: 0.5rem;">{icon}</span>
-            <span style="font-size: 1.1rem; font-weight: 600; color: {color};">{name}</span>
+        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+            <span style="
+                width: 8px; 
+                height: 8px; 
+                background: {color}; 
+                border-radius: 50%; 
+                margin-right: 0.5rem;
+            "></span>
+            <span style="font-size: 0.95rem; font-weight: 600; color: {color};">{name}</span>
         </div>
         {stats_html}
     </div>
@@ -139,11 +144,11 @@ def _render_approval_card(
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("✅ Approve", key=f"approve_{approval.get('id')}", use_container_width=True):
+            if st.button("Approve", key=f"approve_{approval.get('id')}", use_container_width=True):
                 if on_approve:
                     on_approve(approval.get("id"))
         with col2:
-            if st.button("❌ Reject", key=f"reject_{approval.get('id')}", use_container_width=True):
+            if st.button("Reject", key=f"reject_{approval.get('id')}", use_container_width=True):
                 if on_reject:
                     on_reject(approval.get("id"))
 
@@ -151,7 +156,7 @@ def _render_approval_card(
 def render_negotiation_panel(negotiations: List[Dict]):
     """Render the negotiation history panel."""
     
-    st.subheader("🤝 Negotiation History")
+    st.subheader("Negotiation History")
     
     if not negotiations:
         st.info("No negotiations yet")
@@ -208,24 +213,30 @@ def _render_negotiation_card(negotiation: Dict):
 def render_agent_reasoning(
     agent_name: str,
     reasoning: str,
-    icon: str = "🤖",
+    icon: str = "",
     color: str = "#8B5CF6"
 ):
     """Render agent reasoning in a styled box."""
     
     st.markdown(f"""
     <div style="
-        background: linear-gradient(135deg, {color}11 0%, {color}05 100%);
-        border-radius: 0.75rem;
-        padding: 1rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
         border-left: 3px solid {color};
-        margin: 0.5rem 0;
+        margin: 0.35rem 0;
     ">
-        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
-            <span style="font-size: 1.25rem; margin-right: 0.5rem;">{icon}</span>
+        <div style="display: flex; align-items: center; margin-bottom: 0.35rem;">
+            <span style="
+                width: 6px; 
+                height: 6px; 
+                background: {color}; 
+                border-radius: 50%; 
+                margin-right: 0.5rem;
+            "></span>
             <span style="font-weight: 600; color: {color};">{agent_name}</span>
         </div>
-        <div style="color: #E2E8F0; font-size: 0.9rem; white-space: pre-wrap;">
+        <div style="color: #E2E8F0; font-size: 0.85rem; white-space: pre-wrap;">
             {reasoning}
         </div>
     </div>
@@ -240,42 +251,42 @@ def render_decision_flow(
 ):
     """Render the decision flow visualization."""
     
-    st.subheader("🔄 Decision Flow")
+    st.subheader("Decision Flow")
     
     # Pattern → Hypothesis → Action → Negotiation
     cols = st.columns(4)
     
     with cols[0]:
-        st.markdown("**🔍 Pattern**")
+        st.markdown("**Pattern**")
         st.caption(pattern.get("pattern_type", "").replace("_", " ").title())
         st.caption(f"Entity: {pattern.get('affected_entity', '')}")
         st.caption(f"Confidence: {pattern.get('confidence', 0):.0%}")
     
     with cols[1]:
-        st.markdown("**💡 Hypothesis**")
+        st.markdown("**Hypothesis**")
         st.caption(hypothesis.get("description", "")[:100] + "...")
         st.caption(f"Root Cause: {hypothesis.get('root_cause', '')[:50]}...")
     
     with cols[2]:
-        st.markdown("**⚡ Action**")
+        st.markdown("**Action**")
         st.caption(action.get("action_type", "").replace("_", " ").title())
         st.caption(f"Risk: {action.get('risk_score', 0):.0%}")
         st.caption(f"Expected Δ: {action.get('expected_success_rate_delta', 0):.1%}")
     
     with cols[3]:
         if negotiation:
-            st.markdown("**🤝 Negotiation**")
+            st.markdown("**Negotiation**")
             st.caption(f"Decision: {negotiation.get('final_decision', 'pending').title()}")
             st.caption(f"Rounds: {negotiation.get('rounds_count', 0)}")
         else:
-            st.markdown("**⏳ Pending**")
+            st.markdown("**Pending**")
             st.caption("Awaiting negotiation...")
 
 
 def render_learning_insights(learnings: List[Dict], action_stats: Dict):
     """Render learning insights panel."""
     
-    st.subheader("🧠 Learning Insights")
+    st.subheader("Learning Insights")
     
     # Action type effectiveness
     if action_stats:
@@ -334,7 +345,7 @@ def render_learning_insights(learnings: List[Dict], action_stats: Dict):
 def render_payload_mutations(mutations: List[Dict], mutator_stats: Dict = None):
     """Render the payload mutations panel - Self-Healing Data visualization."""
     
-    st.subheader("🔧 Payload Polymorphism Engine")
+    st.subheader("Payload Polymorphism Engine")
     st.caption("Self-healing data: fixing payloads to match gateway requirements")
     
     # Stats row
@@ -365,7 +376,7 @@ def render_payload_mutations(mutations: List[Dict], mutator_stats: Dict = None):
     st.divider()
     
     if not mutations:
-        st.info("🧬 No mutations yet. Inject 'Payload Error' chaos to see the engine in action!")
+        st.info("No mutations yet. Inject 'Payload Error' chaos to see the engine in action!")
         return
     
     st.markdown("**Recent Self-Healing Actions**")
@@ -373,17 +384,14 @@ def render_payload_mutations(mutations: List[Dict], mutator_stats: Dict = None):
     for mutation in mutations[:8]:
         was_successful = mutation.get("was_successful")
         
-        # Determine status color and icon
+        # Determine status color
         if was_successful is True:
-            status_icon = "✅"
             status_color = "#10B981"
             status_text = "Fixed"
         elif was_successful is False:
-            status_icon = "❌"
             status_color = "#EF4444"
             status_text = "Failed"
         else:
-            status_icon = "⏳"
             status_color = "#F59E0B"
             status_text = "Pending"
         
@@ -404,31 +412,33 @@ def render_payload_mutations(mutations: List[Dict], mutator_stats: Dict = None):
         
         st.markdown(f"""
         <div style="
-            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-            border-radius: 0.75rem;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            border-left: 4px solid {status_color};
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: 0.35rem 0;
+            border-left: 3px solid {status_color};
         ">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.25rem;">{status_icon}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <span style="
+                        width: 6px; 
+                        height: 6px; 
+                        background: {status_color}; 
+                        border-radius: 50%;
+                    "></span>
                     <span style="
                         background: #6366F122;
                         color: #818CF8;
-                        padding: 0.2rem 0.6rem;
-                        border-radius: 0.5rem;
-                        font-size: 0.75rem;
+                        padding: 0.15rem 0.4rem;
+                        border-radius: 0.25rem;
+                        font-size: 0.7rem;
                         font-weight: 600;
                     ">{gateway.upper()}</span>
-                    <span style="color: #94A3B8; font-size: 0.8rem;">{error_code}</span>
+                    <span style="color: #94A3B8; font-size: 0.75rem;">{error_code}</span>
                 </div>
                 <span style="
-                    background: {status_color}22;
                     color: {status_color};
-                    padding: 0.2rem 0.6rem;
-                    border-radius: 0.5rem;
-                    font-size: 0.75rem;
+                    font-size: 0.7rem;
                     font-weight: 600;
                 ">{status_text}</span>
             </div>
